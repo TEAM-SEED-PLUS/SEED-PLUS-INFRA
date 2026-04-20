@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(terraform fmt *)",
+      "Bash(where terraform *)",
+      "Bash(echo \"fmt exit: $?\")",
+      "Bash(terraform init *)",
+      "Bash(terraform validate *)",
+      "Bash(echo \"validate exit: $?\")",
+      "Bash(echo \"s3 module fmt exit: $?\")",
+      "Bash(echo \"dev validate exit: $?\")",
+      "Bash(echo \"bootstrap fmt exit: $?\")",
+      "Bash(echo \"bootstrap validate exit: $?\")",
+      "Bash(echo \"dev fmt exit: $?\")"
+    ]
+  }
+}
