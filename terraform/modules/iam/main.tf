@@ -1,5 +1,7 @@
 # IAM module – EC2 instance profile with S3, SSM, and CloudWatch permissions.
 
+data "aws_caller_identity" "current" {}
+
 # -----------------------------------------------------------------------------
 # Assume Role Policy – ec2.amazonaws.com only
 # -----------------------------------------------------------------------------
@@ -30,9 +32,17 @@ resource "aws_iam_role" "ec2" {
 }
 
 # -----------------------------------------------------------------------------
-# S3 Policy – PutObject / GetObject on the backup bucket only
+# S3 Policy – ListBucket on bucket + PutObject/GetObject on objects
+# ListBucket is required for tools that check object existence before uploading
 # -----------------------------------------------------------------------------
 data "aws_iam_policy_document" "s3_backup" {
+  statement {
+    sid       = "S3BackupList"
+    effect    = "Allow"
+    actions   = ["s3:ListBucket"]
+    resources = ["arn:aws:s3:::${var.backup_bucket_name}"]
+  }
+
   statement {
     sid     = "S3BackupAccess"
     effect  = "Allow"
@@ -46,7 +56,7 @@ data "aws_iam_policy_document" "s3_backup" {
 
 resource "aws_iam_policy" "s3_backup" {
   name        = "${var.project}-${var.environment}-s3-backup-policy"
-  description = "Allow EC2 to read/write objects in the backup S3 bucket"
+  description = "Allow EC2 to list and read/write objects in the backup S3 bucket"
   policy      = data.aws_iam_policy_document.s3_backup.json
 
   tags = {
@@ -63,6 +73,7 @@ resource "aws_iam_role_policy_attachment" "s3_backup" {
 
 # -----------------------------------------------------------------------------
 # SSM Policy – GetParameter / GetParameters (Parameter Store read-only)
+# account_id is pinned to prevent cross-account parameter access
 # -----------------------------------------------------------------------------
 data "aws_iam_policy_document" "ssm_read" {
   statement {
@@ -70,9 +81,8 @@ data "aws_iam_policy_document" "ssm_read" {
     effect  = "Allow"
     actions = ["ssm:GetParameter", "ssm:GetParameters"]
 
-    # Scope to parameters prefixed with /<project>/<environment>/ at plan time
     resources = [
-      "arn:aws:ssm:${var.aws_region}:*:parameter/${var.project}/${var.environment}/*",
+      "arn:aws:ssm:${var.aws_region}:${data.aws_caller_identity.current.account_id}:parameter/${var.project}/${var.environment}/*",
     ]
   }
 }
@@ -95,7 +105,8 @@ resource "aws_iam_role_policy_attachment" "ssm_read" {
 }
 
 # -----------------------------------------------------------------------------
-# CloudWatch Policy – PutMetricData, CreateLogGroup, PutLogEvents (CW Agent)
+# CloudWatch Policy – full set required by CloudWatch Agent
+# CreateLogStream / DescribeLogGroups / DescribeLogStreams were previously missing
 # -----------------------------------------------------------------------------
 data "aws_iam_policy_document" "cloudwatch_agent" {
   statement {
@@ -112,7 +123,10 @@ data "aws_iam_policy_document" "cloudwatch_agent" {
     effect = "Allow"
     actions = [
       "logs:CreateLogGroup",
+      "logs:CreateLogStream",
       "logs:PutLogEvents",
+      "logs:DescribeLogGroups",
+      "logs:DescribeLogStreams",
     ]
     resources = ["*"]
   }

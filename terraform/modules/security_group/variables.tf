@@ -20,3 +20,8 @@ variable "my_ip" {
   type        = string
   sensitive   = true
 }
+
+variable "db_port" {
+  description = "Non-default PostgreSQL listen port – avoids well-known port 5432 to reduce noise"
+  type        = number
+}

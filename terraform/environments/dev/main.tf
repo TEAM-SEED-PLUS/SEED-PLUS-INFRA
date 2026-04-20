@@ -16,6 +16,10 @@ provider "aws" {
   region = var.aws_region
 }
 
+locals {
+  project = "seed-plus"
+}
+
 # -----------------------------------------------------------------------------
 # Data Source – latest Ubuntu 24.04 LTS AMI (Canonical official account)
 # -----------------------------------------------------------------------------
@@ -35,14 +39,14 @@ data "aws_ami" "ubuntu" {
 }
 
 # -----------------------------------------------------------------------------
-# 1. S3 – Main application bucket (seed-plus-s3)
+# 1. S3 – Main application bucket
 # -----------------------------------------------------------------------------
 module "s3_app" {
   source = "../../modules/s3"
 
-  project     = "seed-plus"
+  project     = local.project
   environment = var.environment
-  bucket_name = "seed-plus-s3"
+  bucket_name = "seed-plus-${var.environment}-s3"
 }
 
 # -----------------------------------------------------------------------------
@@ -51,9 +55,9 @@ module "s3_app" {
 module "s3_backup" {
   source = "../../modules/s3"
 
-  project     = "seed-plus"
+  project     = local.project
   environment = var.environment
-  bucket_name = "seed-plus-ebs-backup"
+  bucket_name = "seed-plus-${var.environment}-ebs-backup"
 
   versioning_enabled        = true
   enable_lifecycle          = true
@@ -66,7 +70,7 @@ module "s3_backup" {
 module "iam" {
   source = "../../modules/iam"
 
-  project            = "seed-plus"
+  project     = local.project
   environment        = var.environment
   aws_region         = var.aws_region
   backup_bucket_name = module.s3_backup.bucket_id
@@ -78,7 +82,7 @@ module "iam" {
 module "vpc" {
   source = "../../modules/vpc"
 
-  project           = "seed-plus"
+  project     = local.project
   environment       = var.environment
   availability_zone = var.availability_zone
 }
@@ -89,10 +93,11 @@ module "vpc" {
 module "security_group" {
   source = "../../modules/security_group"
 
-  project     = "seed-plus"
+  project     = local.project
   environment = var.environment
   vpc_id      = module.vpc.vpc_id
   my_ip       = var.my_ip
+  db_port     = var.db_port
 }
 
 # -----------------------------------------------------------------------------
@@ -101,7 +106,7 @@ module "security_group" {
 module "ec2_web" {
   source = "../../modules/ec2"
 
-  project               = "seed-plus"
+  project     = local.project
   environment           = var.environment
   tier                  = "web"
   ami_id                = data.aws_ami.ubuntu.id
@@ -119,7 +124,7 @@ module "ec2_web" {
 module "ec2_app" {
   source = "../../modules/ec2"
 
-  project               = "seed-plus"
+  project     = local.project
   environment           = var.environment
   tier                  = "app"
   ami_id                = data.aws_ami.ubuntu.id
@@ -132,12 +137,12 @@ module "ec2_app" {
 }
 
 # -----------------------------------------------------------------------------
-# 8. EC2 – DB Tier (includes user_data: EBS mount + PostgreSQL setup)
+# 8. EC2 – DB Tier
 # -----------------------------------------------------------------------------
 module "ec2_db" {
   source = "../../modules/ec2"
 
-  project               = "seed-plus"
+  project               = local.project
   environment           = var.environment
   tier                  = "db"
   ami_id                = data.aws_ami.ubuntu.id
@@ -147,44 +152,6 @@ module "ec2_db" {
   security_group_id     = module.security_group.sg_db_id
 
   associate_public_ip_address = true
-
-  user_data = <<-EOF
-    #!/bin/bash
-    set -euo pipefail
-
-    # Wait for /dev/xvdb – EBS volume may arrive after cloud-init starts
-    while [ ! -b /dev/xvdb ]; do sleep 5; done
-
-    # Install PostgreSQL
-    apt-get update -y
-    apt-get install -y postgresql postgresql-contrib
-
-    # Stop the default cluster before relocating its data directory
-    systemctl stop postgresql
-
-    # Format the EBS data volume with xfs
-    mkfs.xfs /dev/xvdb
-
-    # Create mount point and mount permanently
-    mkdir -p /data/postgresql
-    mount /dev/xvdb /data/postgresql
-    echo "/dev/xvdb /data/postgresql xfs defaults,nofail 0 2" >> /etc/fstab
-
-    # Detect installed PostgreSQL major version (e.g. 16 on Ubuntu 24.04)
-    PG_VER=$(pg_lsclusters -h | awk 'NR==1{print $1}')
-
-    # Migrate cluster data to the new volume
-    rsync -a /var/lib/postgresql/$PG_VER/main/ /data/postgresql/
-
-    # Hand ownership to the postgres system user
-    chown -R postgres:postgres /data/postgresql
-
-    # Point the cluster configuration at the new data directory
-    sed -i "s|^#*data_directory\s*=.*|data_directory = '/data/postgresql'|" \
-      /etc/postgresql/$PG_VER/main/postgresql.conf
-
-    systemctl start postgresql
-  EOF
 }
 
 # -----------------------------------------------------------------------------
@@ -193,7 +160,7 @@ module "ec2_db" {
 module "ebs" {
   source = "../../modules/ebs"
 
-  project           = "seed-plus"
+  project     = local.project
   environment       = var.environment
   availability_zone = var.availability_zone
   instance_id       = module.ec2_db.instance_id

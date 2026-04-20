@@ -28,3 +28,9 @@ variable "key_name" {
   description = "Name of the EC2 key pair for SSH access"
   type        = string
 }
+
+variable "db_port" {
+  description = "Non-default PostgreSQL listen port"
+  type        = number
+  default     = 15921
+}

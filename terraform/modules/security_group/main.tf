@@ -106,19 +106,19 @@ resource "aws_security_group" "db" {
 
 resource "aws_vpc_security_group_ingress_rule" "db_postgres_app" {
   security_group_id            = aws_security_group.db.id
-  description                  = "Allow PostgreSQL from sg_app only"
+  description                  = "Allow PostgreSQL (non-default port) from sg_app only"
   ip_protocol                  = "tcp"
-  from_port                    = 5432
-  to_port                      = 5432
+  from_port                    = var.db_port
+  to_port                      = var.db_port
   referenced_security_group_id = aws_security_group.app.id
 }
 
 resource "aws_vpc_security_group_ingress_rule" "db_postgres_operator" {
   security_group_id = aws_security_group.db.id
-  description       = "Allow PostgreSQL from operator IP for direct developer access"
+  description       = "Allow PostgreSQL (non-default port) from operator IP for direct developer access"
   ip_protocol       = "tcp"
-  from_port         = 5432
-  to_port           = 5432
+  from_port         = var.db_port
+  to_port           = var.db_port
   cidr_ipv4         = var.my_ip
 }
 

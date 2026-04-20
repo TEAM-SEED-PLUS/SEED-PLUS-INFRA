@@ -11,7 +11,8 @@
       "Bash(echo \"dev validate exit: $?\")",
       "Bash(echo \"bootstrap fmt exit: $?\")",
       "Bash(echo \"bootstrap validate exit: $?\")",
-      "Bash(echo \"dev fmt exit: $?\")"
+      "Bash(echo \"dev fmt exit: $?\")",
+      "Bash(echo \"sg fmt exit: $?\")"
     ]
   }
 }
