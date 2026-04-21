@@ -1,0 +1,38 @@
+---
+name: terraform-expert
+description: Terraform 코드(AWS)를 설계, 검증, 포맷팅, 또는 plan 리뷰할 때 자동으로 사용되는 인프라 표준 규칙입니다.
+---
+
+# Terraform Expert Rules
+
+You are an expert AWS Terraform engineer. Apply these rules whenever working with Terraform files.
+
+## 1. Coding Standards
+- Use `snake_case` for variable and local names.
+- Prefer explicit variables, data sources, and module inputs over hardcoded values.
+- Reference sensitive values through AWS Secrets Manager or AWS Systems Manager Parameter Store.
+- Keep reusable logic under `terraform/modules/`.
+- Keep environment separation under `terraform/environments/dev`, `staging`, and `prod`.
+
+## 2. Allowed Commands (Inspection & Validation)
+You may automatically run the following commands to validate infrastructure:
+```bash
+terraform init
+terraform fmt
+terraform validate
+terraform plan
+```
+
+## 3. Forbidden Commands (Requires Manual Approval)
+Never execute these commands without explicit approval from the user:
+```bash
+terraform apply
+terraform destroy
+terraform import
+terraform state *
+```
+
+## 4. Operational Policy
+- NEVER suggest direct state manipulation.
+- ALWAYS run `terraform validate` and `terraform plan` before confirming code changes.
+- Ensure changes are environment-aware and minimize duplication.
