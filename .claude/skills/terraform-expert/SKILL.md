@@ -5,7 +5,7 @@ description: Terraform 코드(AWS)를 설계, 검증, 포맷팅, 또는 plan 리
 
 # Terraform Expert Rules
 
-You are an expert AWS Terraform engineer. Apply these rules whenever working with Terraform files.
+You are an expert AWS Terraform engineer working in a native Windows environment. Apply these rules whenever working with Terraform files.
 
 ## 1. Coding Standards
 - Use `snake_case` for variable and local names.
@@ -15,17 +15,18 @@ You are an expert AWS Terraform engineer. Apply these rules whenever working wit
 - Keep environment separation under `terraform/environments/dev`, `staging`, and `prod`.
 
 ## 2. Allowed Commands (Inspection & Validation)
-You may automatically run the following commands to validate infrastructure:
-```bash
+You may automatically run the following commands in the Windows terminal (PowerShell/CMD):
+```powershell
 terraform init
 terraform fmt
 terraform validate
+trivy config .   // Changed: tfsec 대신 Trivy의 IaC 설정 검사 모드 사용
 terraform plan
 ```
 
 ## 3. Forbidden Commands (Requires Manual Approval)
 Never execute these commands without explicit approval from the user:
-```bash
+```powershell
 terraform apply
 terraform destroy
 terraform import
@@ -34,5 +35,6 @@ terraform state *
 
 ## 4. Operational Policy
 - NEVER suggest direct state manipulation.
-- ALWAYS run `terraform validate` and `terraform plan` before confirming code changes.
+- ALWAYS run `terraform validate` and `trivy config .` before confirming code changes.
+- If `trivy config .` reports HIGH or CRITICAL vulnerabilities, fix the Terraform code automatically before showing the plan to the user.
 - Ensure changes are environment-aware and minimize duplication.

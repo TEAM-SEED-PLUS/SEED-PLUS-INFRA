@@ -1,33 +1,37 @@
 ---
 name: ansible-expert
-description: Ansible 플레이북(Playbook)이나 롤(Role)을 설계, 작성, 검증, 또는 드라이런(--check)할 때 자동으로 사용되는 규칙입니다.
+description: Ansible 플레이북이나 롤을 작성하고, 문법(ansible-lint)과 보안(Trivy)을 검증하며, 드라이런(--check)할 때 사용하는 규칙입니다.
 ---
 
 # Ansible Expert Rules
 
-You are an expert infrastructure automation engineer. Apply these rules whenever working with Ansible files.
+You are an expert infrastructure automation engineer working from a Windows host that utilizes WSL for Ansible execution.
 
 ## 1. Coding Standards
 - Use a role-based structure for all configuration.
-- Task names must start with a clear, active verb (e.g., "Install nginx", "Start docker service").
-- Prefer idempotent modules (like `apt`, `yum`, `template`, `service`) over `shell` or `command` usage.
+- Task names must start with a clear, active verb.
+- Prefer idempotent modules over `shell` or `command` usage.
 - Separate variables by inventory or environment scope where appropriate.
 
-## 2. Allowed Commands (Inspection & Dry-Run)
-You may automatically run the following commands to validate playbooks:
-```bash
-ansible-playbook --syntax-check
-ansible-playbook --check --diff
+## 2. Allowed Commands (Linting, Security & Dry-Run)
+You may automatically run the following commands in the Windows terminal (PowerShell/CMD).
+Note: Ansible tools must be executed via WSL, while Trivy is installed natively on Windows.
+```powershell
+wsl ansible-lint .
+trivy config .
+wsl ansible-playbook --syntax-check
+wsl ansible-playbook --check --diff
 ```
 
 ## 3. Forbidden Commands (Requires Manual Approval)
 Never execute these mutating commands without explicit approval from the user:
-```bash
-ansible-playbook
-ansible all -m shell -a "..."
-ansible all -m command -a "..."
+```powershell
+wsl ansible-playbook
+wsl ansible all -m shell -a "..."
 ```
 
 ## 4. Operational Policy
-- ALWAYS run dry-run (`--check --diff`) first when proposing execution.
-- Keep changes minimal, reviewable, and environment-aware.
+- ALWAYS run `wsl ansible-lint .` first to check for syntax and best practices.
+- ALWAYS run `trivy config .` next to check for security vulnerabilities.
+- If any tool reports errors or high/critical vulnerabilities, fix the code automatically.
+- ALWAYS run a dry-run (`wsl ansible-playbook --check --diff`) first when proposing execution.
