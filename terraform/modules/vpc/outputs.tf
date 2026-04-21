@@ -29,3 +29,18 @@ output "public_route_table_id" {
   description = "ID of the public route table"
   value       = aws_route_table.public.id
 }
+
+output "private_route_table_id" {
+  description = "ID of the private route table (app and db subnets – no internet egress)"
+  value       = aws_route_table.private.id
+}
+
+output "app_subnet_cidr" {
+  description = "CIDR block of the app (private) subnet"
+  value       = aws_subnet.app.cidr_block
+}
+
+output "db_subnet_cidr" {
+  description = "CIDR block of the db (private) subnet"
+  value       = aws_subnet.db.cidr_block
+}

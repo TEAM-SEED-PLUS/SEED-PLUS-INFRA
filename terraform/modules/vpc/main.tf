@@ -71,7 +71,7 @@ resource "aws_internet_gateway" "this" {
 }
 
 # -----------------------------------------------------------------------------
-# Route Table – routes all traffic through the IGW
+# Public Route Table – web subnet only, routes internet traffic through IGW
 # -----------------------------------------------------------------------------
 resource "aws_route_table" "public" {
   vpc_id = aws_vpc.this.id
@@ -89,6 +89,20 @@ resource "aws_route_table" "public" {
 }
 
 # -----------------------------------------------------------------------------
+# Private Route Table – app and db subnets; no default route to internet
+# Traffic stays within the VPC; access via SSM Port Forwarding through web tier
+# -----------------------------------------------------------------------------
+resource "aws_route_table" "private" {
+  vpc_id = aws_vpc.this.id
+
+  tags = {
+    Name        = "${var.project}-${var.environment}-private-rt"
+    Environment = var.environment
+    Project     = var.project
+  }
+}
+
+# -----------------------------------------------------------------------------
 # Route Table Associations
 # -----------------------------------------------------------------------------
 resource "aws_route_table_association" "web" {
@@ -98,10 +112,10 @@ resource "aws_route_table_association" "web" {
 
 resource "aws_route_table_association" "app" {
   subnet_id      = aws_subnet.app.id
-  route_table_id = aws_route_table.public.id
+  route_table_id = aws_route_table.private.id
 }
 
 resource "aws_route_table_association" "db" {
   subnet_id      = aws_subnet.db.id
-  route_table_id = aws_route_table.public.id
+  route_table_id = aws_route_table.private.id
 }

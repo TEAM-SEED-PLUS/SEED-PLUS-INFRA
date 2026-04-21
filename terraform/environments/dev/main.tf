@@ -151,11 +151,32 @@ module "ec2_db" {
   subnet_id             = module.vpc.db_subnet_id
   security_group_id     = module.security_group.sg_db_id
 
-  associate_public_ip_address = true
+  associate_public_ip_address = false
 }
 
 # -----------------------------------------------------------------------------
-# 9. EBS – DB data volume (50 GB gp3, Backup tag for DLM)
+# 9. NAT Instance – t4g.nano ARM64, SSM-only access, routes private subnet traffic
+# -----------------------------------------------------------------------------
+module "nat_instance" {
+  source = "../../modules/nat_instance"
+
+  project              = local.project
+  environment          = var.environment
+  vpc_id               = module.vpc.vpc_id
+  public_subnet_id     = module.vpc.web_subnet_id
+  private_subnet_cidrs = [module.vpc.app_subnet_cidr, module.vpc.db_subnet_cidr]
+  my_ip                = var.my_ip
+}
+
+# Default route in the private route table → NAT instance ENI
+resource "aws_route" "private_nat" {
+  route_table_id         = module.vpc.private_route_table_id
+  destination_cidr_block = "0.0.0.0/0"
+  network_interface_id   = module.nat_instance.primary_network_interface_id
+}
+
+# -----------------------------------------------------------------------------
+# 10. EBS – DB data volume (50 GB gp3, Backup tag for DLM)
 # -----------------------------------------------------------------------------
 module "ebs" {
   source = "../../modules/ebs"

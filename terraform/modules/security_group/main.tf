@@ -51,6 +51,33 @@ resource "aws_vpc_security_group_egress_rule" "web_to_app" {
   referenced_security_group_id = aws_security_group.app.id
 }
 
+resource "aws_vpc_security_group_egress_rule" "web_ssh_to_app" {
+  security_group_id            = aws_security_group.web.id
+  description                  = "Allow SSH outbound to app tier for ProxyJump admin access"
+  ip_protocol                  = "tcp"
+  from_port                    = 22
+  to_port                      = 22
+  referenced_security_group_id = aws_security_group.app.id
+}
+
+resource "aws_vpc_security_group_egress_rule" "web_ssh_to_db" {
+  security_group_id            = aws_security_group.web.id
+  description                  = "Allow SSH outbound to DB tier for ProxyJump admin access"
+  ip_protocol                  = "tcp"
+  from_port                    = 22
+  to_port                      = 22
+  referenced_security_group_id = aws_security_group.db.id
+}
+
+resource "aws_vpc_security_group_egress_rule" "web_to_db" {
+  security_group_id            = aws_security_group.web.id
+  description                  = "Allow outbound to DB tier for SSM Port Forwarding relay"
+  ip_protocol                  = "tcp"
+  from_port                    = var.db_port
+  to_port                      = var.db_port
+  referenced_security_group_id = aws_security_group.db.id
+}
+
 resource "aws_vpc_security_group_egress_rule" "web_https" {
   security_group_id = aws_security_group.web.id
   description       = "Allow HTTPS outbound for OS updates and TLS termination"
@@ -94,12 +121,12 @@ resource "aws_vpc_security_group_ingress_rule" "app_8080" {
 }
 
 resource "aws_vpc_security_group_ingress_rule" "app_ssh" {
-  security_group_id = aws_security_group.app.id
-  description       = "Allow SSH from operator IP only"
-  ip_protocol       = "tcp"
-  from_port         = 22
-  to_port           = 22
-  cidr_ipv4         = var.my_ip
+  security_group_id            = aws_security_group.app.id
+  description                  = "Allow SSH from web tier only – admin ProxyJump via Web EC2"
+  ip_protocol                  = "tcp"
+  from_port                    = 22
+  to_port                      = 22
+  referenced_security_group_id = aws_security_group.web.id
 }
 
 resource "aws_vpc_security_group_egress_rule" "app_to_db" {
@@ -153,22 +180,22 @@ resource "aws_vpc_security_group_ingress_rule" "db_postgres_app" {
   referenced_security_group_id = aws_security_group.app.id
 }
 
-resource "aws_vpc_security_group_ingress_rule" "db_postgres_operator" {
-  security_group_id = aws_security_group.db.id
-  description       = "Allow PostgreSQL (non-default port) from operator IP for direct developer access"
-  ip_protocol       = "tcp"
-  from_port         = var.db_port
-  to_port           = var.db_port
-  cidr_ipv4         = var.my_ip
+resource "aws_vpc_security_group_ingress_rule" "db_ssh" {
+  security_group_id            = aws_security_group.db.id
+  description                  = "Allow SSH from web tier only – admin ProxyJump via Web EC2"
+  ip_protocol                  = "tcp"
+  from_port                    = 22
+  to_port                      = 22
+  referenced_security_group_id = aws_security_group.web.id
 }
 
-resource "aws_vpc_security_group_ingress_rule" "db_ssh" {
-  security_group_id = aws_security_group.db.id
-  description       = "Allow SSH from operator IP only"
-  ip_protocol       = "tcp"
-  from_port         = 22
-  to_port           = 22
-  cidr_ipv4         = var.my_ip
+resource "aws_vpc_security_group_ingress_rule" "db_postgres_web" {
+  security_group_id            = aws_security_group.db.id
+  description                  = "Allow PostgreSQL from web tier for SSM Port Forwarding relay"
+  ip_protocol                  = "tcp"
+  from_port                    = var.db_port
+  to_port                      = var.db_port
+  referenced_security_group_id = aws_security_group.web.id
 }
 
 resource "aws_vpc_security_group_egress_rule" "db_https" {
