@@ -5,6 +5,18 @@ variable "project" {
   type        = string
 }
 
+variable "name_suffix" {
+  description = "Short label appended to IAM resource names to avoid conflicts when the module is instantiated more than once (e.g. 'web', 'private')"
+  type        = string
+  default     = "ec2"
+}
+
+variable "enable_ssm" {
+  description = "Attach AmazonSSMManagedInstanceCore to the role – set false for tiers that must not be SSM-managed"
+  type        = bool
+  default     = true
+}
+
 variable "environment" {
   description = "Deployment environment (dev, staging, prod)"
   type        = string

@@ -65,13 +65,30 @@ module "s3_backup" {
 }
 
 # -----------------------------------------------------------------------------
-# 3. IAM – EC2 instance profile (references s3_backup for scoped S3 policy)
+# 3a. IAM – Web tier role (no SSM: web EC2 is not an SSM management target)
 # -----------------------------------------------------------------------------
-module "iam" {
+module "iam_web" {
   source = "../../modules/iam"
 
-  project     = local.project
+  project            = local.project
   environment        = var.environment
+  name_suffix        = "web"
+  enable_ssm         = false
+  aws_region         = var.aws_region
+  backup_bucket_name = module.s3_backup.bucket_id
+}
+
+# -----------------------------------------------------------------------------
+# 3b. IAM – Private tier role (SSM enabled: App/DB EC2s are direct SSM targets)
+# Developers connect via: aws ssm start-session --target <instance-id>
+# -----------------------------------------------------------------------------
+module "iam_private" {
+  source = "../../modules/iam"
+
+  project            = local.project
+  environment        = var.environment
+  name_suffix        = "private"
+  enable_ssm         = true
   aws_region         = var.aws_region
   backup_bucket_name = module.s3_backup.bucket_id
 }
@@ -111,7 +128,7 @@ module "ec2_web" {
   tier                  = "web"
   ami_id                = data.aws_ami.ubuntu.id
   key_name              = var.key_name
-  instance_profile_name = module.iam.ec2_instance_profile_name
+  instance_profile_name = module.iam_web.ec2_instance_profile_name
   subnet_id             = module.vpc.web_subnet_id
   security_group_id     = module.security_group.sg_web_id
 
@@ -129,7 +146,7 @@ module "ec2_app" {
   tier                  = "app"
   ami_id                = data.aws_ami.ubuntu.id
   key_name              = var.key_name
-  instance_profile_name = module.iam.ec2_instance_profile_name
+  instance_profile_name = module.iam_private.ec2_instance_profile_name
   subnet_id             = module.vpc.app_subnet_id
   security_group_id     = module.security_group.sg_app_id
 
@@ -147,7 +164,7 @@ module "ec2_db" {
   tier                  = "db"
   ami_id                = data.aws_ami.ubuntu.id
   key_name              = var.key_name
-  instance_profile_name = module.iam.ec2_instance_profile_name
+  instance_profile_name = module.iam_private.ec2_instance_profile_name
   subnet_id             = module.vpc.db_subnet_id
   security_group_id     = module.security_group.sg_db_id
 
@@ -173,6 +190,46 @@ resource "aws_route" "private_nat" {
   route_table_id         = module.vpc.private_route_table_id
   destination_cidr_block = "0.0.0.0/0"
   network_interface_id   = module.nat_instance.primary_network_interface_id
+}
+
+# -----------------------------------------------------------------------------
+# Cross-module SG rules – NAT Instance as sole SSH ProxyJump host
+# Defined here to break the circular dependency between security_group and nat_instance modules
+# -----------------------------------------------------------------------------
+resource "aws_vpc_security_group_egress_rule" "nat_ssh_to_app" {
+  security_group_id            = module.nat_instance.sg_nat_id
+  description                  = "Allow SSH outbound to app tier for admin ProxyJump"
+  ip_protocol                  = "tcp"
+  from_port                    = 22
+  to_port                      = 22
+  referenced_security_group_id = module.security_group.sg_app_id
+}
+
+resource "aws_vpc_security_group_egress_rule" "nat_ssh_to_db" {
+  security_group_id            = module.nat_instance.sg_nat_id
+  description                  = "Allow SSH outbound to DB tier for admin ProxyJump"
+  ip_protocol                  = "tcp"
+  from_port                    = 22
+  to_port                      = 22
+  referenced_security_group_id = module.security_group.sg_db_id
+}
+
+resource "aws_vpc_security_group_ingress_rule" "app_ssh_from_nat" {
+  security_group_id            = module.security_group.sg_app_id
+  description                  = "Allow SSH from NAT instance only – admin ProxyJump"
+  ip_protocol                  = "tcp"
+  from_port                    = 22
+  to_port                      = 22
+  referenced_security_group_id = module.nat_instance.sg_nat_id
+}
+
+resource "aws_vpc_security_group_ingress_rule" "db_ssh_from_nat" {
+  security_group_id            = module.security_group.sg_db_id
+  description                  = "Allow SSH from NAT instance only – admin ProxyJump"
+  ip_protocol                  = "tcp"
+  from_port                    = 22
+  to_port                      = 22
+  referenced_security_group_id = module.nat_instance.sg_nat_id
 }
 
 # -----------------------------------------------------------------------------

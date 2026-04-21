@@ -1,5 +1,10 @@
 # Outputs exported from the NAT Instance module.
 
+output "sg_nat_id" {
+  description = "ID of the NAT instance security group – used for cross-module SG rules"
+  value       = aws_security_group.nat.id
+}
+
 output "instance_id" {
   description = "ID of the NAT instance"
   value       = aws_instance.nat.id
