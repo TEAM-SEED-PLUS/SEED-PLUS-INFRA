@@ -54,7 +54,7 @@ data "aws_iam_policy_document" "developer_ssm" {
 
 resource "aws_iam_policy" "developer_ssm" {
   name        = "${var.project}-${var.environment}-developer-ssm-policy"
-  description = "Allow SSM port-forwarding tunnels to the NAT instance only – no console, no direct EC2 access"
+  description = "Allow SSM port-forwarding tunnels to the NAT instance only - no console, no direct EC2 access"
   policy      = data.aws_iam_policy_document.developer_ssm.json
 
   tags = {

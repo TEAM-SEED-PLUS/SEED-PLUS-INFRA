@@ -216,7 +216,7 @@ resource "aws_vpc_security_group_egress_rule" "nat_ssh_to_db" {
 
 resource "aws_vpc_security_group_ingress_rule" "app_ssh_from_nat" {
   security_group_id            = module.security_group.sg_app_id
-  description                  = "Allow SSH from NAT instance only – admin ProxyJump"
+  description                  = "Allow SSH from NAT instance only - admin ProxyJump"
   ip_protocol                  = "tcp"
   from_port                    = 22
   to_port                      = 22
@@ -225,7 +225,7 @@ resource "aws_vpc_security_group_ingress_rule" "app_ssh_from_nat" {
 
 resource "aws_vpc_security_group_ingress_rule" "db_ssh_from_nat" {
   security_group_id            = module.security_group.sg_db_id
-  description                  = "Allow SSH from NAT instance only – admin ProxyJump"
+  description                  = "Allow SSH from NAT instance only - admin ProxyJump"
   ip_protocol                  = "tcp"
   from_port                    = 22
   to_port                      = 22

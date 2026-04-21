@@ -68,7 +68,7 @@ resource "aws_iam_instance_profile" "nat" {
 # -----------------------------------------------------------------------------
 resource "aws_security_group" "nat" {
   name        = "${var.project}-${var.environment}-sg-nat"
-  description = "NAT instance – HTTP/HTTPS from private subnets only; no internet inbound, no SSH"
+  description = "NAT instance - HTTP/HTTPS from private subnets only; no internet inbound, no SSH"
   vpc_id      = var.vpc_id
 
   tags = {
