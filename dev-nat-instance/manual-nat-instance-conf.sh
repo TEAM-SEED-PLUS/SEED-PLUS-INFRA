@@ -47,6 +47,10 @@ sudo iptables -A OUTPUT -p tcp --dport 53 -j ACCEPT
 # HTTP 아웃바운드 허용 (apt 저장소)
 sudo iptables -A OUTPUT -p tcp --dport 80 -j ACCEPT
 
+# ProxyJump용 SSH 아웃바운드 허용 (private subnet 대상)
+sudo iptables -A OUTPUT -p tcp --dport 22 -d 10.0.2.0/24 -j ACCEPT
+sudo iptables -A OUTPUT -p tcp --dport 22 -d 10.0.3.0/24 -j ACCEPT
+
 # Private Subnet → 인터넷 HTTP/HTTPS 포워딩
 sudo iptables -A FORWARD -i ens5 -s 10.0.2.0/24 -p tcp --dport 80  -j ACCEPT
 sudo iptables -A FORWARD -i ens5 -s 10.0.2.0/24 -p tcp --dport 443 -j ACCEPT

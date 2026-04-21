@@ -139,7 +139,7 @@ resource "aws_instance" "nat" {
   iam_instance_profile        = aws_iam_instance_profile.nat.name
   key_name                    = var.key_name
   source_dest_check           = false # Required – NAT instance must forward packets not addressed to itself
-  associate_public_ip_address = false # EIP is used instead of auto-assigned public IP
+  associate_public_ip_address = true  # Web subnet map_public_ip_on_launch=true; EIP overrides the auto-assigned IP
 
   metadata_options {
     http_endpoint               = "enabled"
