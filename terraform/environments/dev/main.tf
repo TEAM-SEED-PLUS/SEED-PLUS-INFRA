@@ -99,7 +99,7 @@ module "iam_private" {
 module "vpc" {
   source = "../../modules/vpc"
 
-  project     = local.project
+  project           = local.project
   environment       = var.environment
   availability_zone = var.availability_zone
 }
@@ -123,7 +123,7 @@ module "security_group" {
 module "ec2_web" {
   source = "../../modules/ec2"
 
-  project     = local.project
+  project               = local.project
   environment           = var.environment
   tier                  = "web"
   ami_id                = data.aws_ami.ubuntu.id
@@ -132,7 +132,25 @@ module "ec2_web" {
   subnet_id             = module.vpc.web_subnet_id
   security_group_id     = module.security_group.sg_web_id
 
-  associate_public_ip_address = true
+  associate_public_ip_address = false
+}
+
+# -----------------------------------------------------------------------------
+# Web Tier EIP – fixed public IP for domain A-record assignment
+# -----------------------------------------------------------------------------
+resource "aws_eip" "web" {
+  domain = "vpc"
+
+  tags = {
+    Name        = "${local.project}-${var.environment}-web-eip"
+    Environment = var.environment
+    Project     = local.project
+  }
+}
+
+resource "aws_eip_association" "web" {
+  instance_id   = module.ec2_web.instance_id
+  allocation_id = aws_eip.web.id
 }
 
 # -----------------------------------------------------------------------------
@@ -141,7 +159,7 @@ module "ec2_web" {
 module "ec2_app" {
   source = "../../modules/ec2"
 
-  project     = local.project
+  project               = local.project
   environment           = var.environment
   tier                  = "app"
   ami_id                = data.aws_ami.ubuntu.id
@@ -259,9 +277,9 @@ resource "aws_vpc_security_group_ingress_rule" "db_postgres_from_nat" {
 module "iam_developers" {
   source = "../../modules/iam_developers"
 
-  project             = local.project
-  environment         = var.environment
-  aws_region          = var.aws_region
+  project                      = local.project
+  environment                  = var.environment
+  aws_region                   = var.aws_region
   nat_instance_id              = module.nat_instance.instance_id
   backend_developer_usernames  = ["kcw", "jhc"]
   frontend_developer_usernames = ["cjs"]
@@ -274,7 +292,7 @@ module "iam_developers" {
 module "ebs" {
   source = "../../modules/ebs"
 
-  project     = local.project
+  project           = local.project
   environment       = var.environment
   availability_zone = var.availability_zone
   instance_id       = module.ec2_db.instance_id

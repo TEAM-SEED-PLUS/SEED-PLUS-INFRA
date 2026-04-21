@@ -4,8 +4,8 @@
 # EC2 connection info
 # -----------------------------------------------------------------------------
 output "web_public_ip" {
-  description = "Public IP of the web tier EC2 instance"
-  value       = module.ec2_web.public_ip
+  description = "Elastic IP of the web tier (fixed, use this for domain A-record)"
+  value       = aws_eip.web.public_ip
 }
 
 output "app_private_ip" {
