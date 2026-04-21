@@ -21,7 +21,20 @@ variable "nat_instance_id" {
   type        = string
 }
 
-variable "developer_usernames" {
-  description = "List of IAM usernames to create and add to the developer group"
+variable "backend_developer_usernames" {
+  description = "IAM usernames for backend developers – added to the backend-developers group (DB + App access via NAT)"
   type        = list(string)
+  default     = []
+}
+
+variable "frontend_developer_usernames" {
+  description = "IAM usernames for frontend developers – added to the frontend-developers group (App + Web access via NAT, no DB)"
+  type        = list(string)
+  default     = []
+}
+
+variable "ai_developer_usernames" {
+  description = "IAM usernames for AI developers – added to the ai-developers group (DB access via NAT only)"
+  type        = list(string)
+  default     = []
 }

@@ -232,8 +232,44 @@ resource "aws_vpc_security_group_ingress_rule" "db_ssh_from_nat" {
   referenced_security_group_id = module.nat_instance.sg_nat_id
 }
 
+resource "aws_vpc_security_group_egress_rule" "nat_to_db_postgres" {
+  security_group_id            = module.nat_instance.sg_nat_id
+  description                  = "Allow outbound to DB tier on db_port for backend developer SSM port forwarding"
+  ip_protocol                  = "tcp"
+  from_port                    = var.db_port
+  to_port                      = var.db_port
+  referenced_security_group_id = module.security_group.sg_db_id
+}
+
+resource "aws_vpc_security_group_ingress_rule" "db_postgres_from_nat" {
+  security_group_id            = module.security_group.sg_db_id
+  description                  = "Allow DB port from NAT instance for backend developer SSM port forwarding"
+  ip_protocol                  = "tcp"
+  from_port                    = var.db_port
+  to_port                      = var.db_port
+  referenced_security_group_id = module.nat_instance.sg_nat_id
+}
+
 # -----------------------------------------------------------------------------
-# 10. EBS – DB data volume (50 GB gp3, Backup tag for DLM)
+# 10. Developer IAM – users, group, and SSM port-forwarding policy
+# Access keys must be created post-apply (secrets must not enter Terraform state):
+#   aws iam create-access-key --user-name kcw
+#   aws iam create-access-key --user-name jhc
+# -----------------------------------------------------------------------------
+module "iam_developers" {
+  source = "../../modules/iam_developers"
+
+  project             = local.project
+  environment         = var.environment
+  aws_region          = var.aws_region
+  nat_instance_id              = module.nat_instance.instance_id
+  backend_developer_usernames  = ["kcw", "jhc"]
+  frontend_developer_usernames = ["cjs"]
+  ai_developer_usernames       = ["sjh"]
+}
+
+# -----------------------------------------------------------------------------
+# 11. EBS – DB data volume (50 GB gp3, Backup tag for DLM)
 # -----------------------------------------------------------------------------
 module "ebs" {
   source = "../../modules/ebs"

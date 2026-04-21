@@ -16,7 +16,7 @@ resource "aws_vpc" "this" {
 }
 
 # -----------------------------------------------------------------------------
-# Subnets (all public – PoC, no NAT Gateway)
+# Subnets
 # -----------------------------------------------------------------------------
 resource "aws_subnet" "web" {
   vpc_id                  = aws_vpc.this.id
