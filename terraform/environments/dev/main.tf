@@ -201,6 +201,7 @@ module "nat_instance" {
   public_subnet_id     = module.vpc.web_subnet_id
   private_subnet_cidrs = [module.vpc.app_subnet_cidr, module.vpc.db_subnet_cidr]
   my_ip                = var.my_ip
+  key_name             = var.key_name
 }
 
 # Default route in the private route table → NAT instance ENI

@@ -137,6 +137,7 @@ resource "aws_instance" "nat" {
   subnet_id                   = var.public_subnet_id
   vpc_security_group_ids      = [aws_security_group.nat.id]
   iam_instance_profile        = aws_iam_instance_profile.nat.name
+  key_name                    = var.key_name
   source_dest_check           = false # Required – NAT instance must forward packets not addressed to itself
   associate_public_ip_address = false # EIP is used instead of auto-assigned public IP
 

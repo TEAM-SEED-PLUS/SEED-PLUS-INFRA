@@ -30,3 +30,8 @@ variable "my_ip" {
   type        = string
   sensitive   = true
 }
+
+variable "key_name" {
+  description = "Name of the EC2 key pair for SSH admin access"
+  type        = string
+}
