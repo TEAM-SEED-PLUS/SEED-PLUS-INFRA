@@ -35,6 +35,6 @@ terraform state *
 
 ## 4. Operational Policy
 - NEVER suggest direct state manipulation.
-- ALWAYS run `terraform validate` and `trivy config .` before confirming code changes.
-- If `trivy config .` reports HIGH or CRITICAL vulnerabilities, fix the Terraform code automatically before showing the plan to the user.
+- ALWAYS run `terraform validate` and `trivy config .` strictly just before executing `terraform plan`. // Changed
+- If `trivy config .` reports HIGH or CRITICAL vulnerabilities during the pre-plan check, fix the Terraform code automatically before showing the plan to the user. // Changed
 - Ensure changes are environment-aware and minimize duplication.

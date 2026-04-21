@@ -10,6 +10,13 @@ resource "aws_instance" "this" {
   associate_public_ip_address = var.associate_public_ip_address
   user_data                   = var.user_data
 
+  # Enforce IMDSv2 – prevents SSRF-based credential theft via IMDS
+  metadata_options {
+    http_endpoint               = "enabled"
+    http_tokens                 = "required"
+    http_put_response_hop_limit = 1
+  }
+
   root_block_device {
     volume_type = "gp3"
     volume_size = 20

@@ -31,7 +31,6 @@ wsl ansible all -m shell -a "..."
 ```
 
 ## 4. Operational Policy
-- ALWAYS run `wsl ansible-lint .` first to check for syntax and best practices.
-- ALWAYS run `trivy config .` next to check for security vulnerabilities.
-- If any tool reports errors or high/critical vulnerabilities, fix the code automatically.
+- ALWAYS run `wsl ansible-lint .` and `trivy config .` strictly just before running a dry-run (`wsl ansible-playbook --check --diff`) or proposing execution. // Changed
+- If any tool reports errors or HIGH/CRITICAL vulnerabilities during this pre-execution check, fix the code automatically before showing the dry-run results to the user. // Changed
 - ALWAYS run a dry-run (`wsl ansible-playbook --check --diff`) first when proposing execution.

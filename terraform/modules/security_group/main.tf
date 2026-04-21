@@ -42,10 +42,30 @@ resource "aws_vpc_security_group_ingress_rule" "web_ssh" {
   cidr_ipv4         = var.my_ip
 }
 
-resource "aws_vpc_security_group_egress_rule" "web_all" {
+resource "aws_vpc_security_group_egress_rule" "web_to_app" {
+  security_group_id            = aws_security_group.web.id
+  description                  = "Allow outbound to app tier on port 8080"
+  ip_protocol                  = "tcp"
+  from_port                    = 8080
+  to_port                      = 8080
+  referenced_security_group_id = aws_security_group.app.id
+}
+
+resource "aws_vpc_security_group_egress_rule" "web_https" {
   security_group_id = aws_security_group.web.id
-  description       = "Allow all outbound traffic"
-  ip_protocol       = "-1"
+  description       = "Allow HTTPS outbound for OS updates and TLS termination"
+  ip_protocol       = "tcp"
+  from_port         = 443
+  to_port           = 443
+  cidr_ipv4         = "0.0.0.0/0"
+}
+
+resource "aws_vpc_security_group_egress_rule" "web_http" {
+  security_group_id = aws_security_group.web.id
+  description       = "Allow HTTP outbound for package repositories"
+  ip_protocol       = "tcp"
+  from_port         = 80
+  to_port           = 80
   cidr_ipv4         = "0.0.0.0/0"
 }
 
@@ -82,10 +102,30 @@ resource "aws_vpc_security_group_ingress_rule" "app_ssh" {
   cidr_ipv4         = var.my_ip
 }
 
-resource "aws_vpc_security_group_egress_rule" "app_all" {
+resource "aws_vpc_security_group_egress_rule" "app_to_db" {
+  security_group_id            = aws_security_group.app.id
+  description                  = "Allow outbound to DB tier on db_port"
+  ip_protocol                  = "tcp"
+  from_port                    = var.db_port
+  to_port                      = var.db_port
+  referenced_security_group_id = aws_security_group.db.id
+}
+
+resource "aws_vpc_security_group_egress_rule" "app_https" {
   security_group_id = aws_security_group.app.id
-  description       = "Allow all outbound traffic"
-  ip_protocol       = "-1"
+  description       = "Allow HTTPS outbound for external API calls and AWS service endpoints"
+  ip_protocol       = "tcp"
+  from_port         = 443
+  to_port           = 443
+  cidr_ipv4         = "0.0.0.0/0"
+}
+
+resource "aws_vpc_security_group_egress_rule" "app_http" {
+  security_group_id = aws_security_group.app.id
+  description       = "Allow HTTP outbound for package repositories"
+  ip_protocol       = "tcp"
+  from_port         = 80
+  to_port           = 80
   cidr_ipv4         = "0.0.0.0/0"
 }
 
@@ -131,9 +171,20 @@ resource "aws_vpc_security_group_ingress_rule" "db_ssh" {
   cidr_ipv4         = var.my_ip
 }
 
-resource "aws_vpc_security_group_egress_rule" "db_all" {
+resource "aws_vpc_security_group_egress_rule" "db_https" {
   security_group_id = aws_security_group.db.id
-  description       = "Allow all outbound traffic"
-  ip_protocol       = "-1"
+  description       = "Allow HTTPS outbound for AWS SSM agent and CloudWatch"
+  ip_protocol       = "tcp"
+  from_port         = 443
+  to_port           = 443
+  cidr_ipv4         = "0.0.0.0/0"
+}
+
+resource "aws_vpc_security_group_egress_rule" "db_http" {
+  security_group_id = aws_security_group.db.id
+  description       = "Allow HTTP outbound for package repositories"
+  ip_protocol       = "tcp"
+  from_port         = 80
+  to_port           = 80
   cidr_ipv4         = "0.0.0.0/0"
 }
