@@ -30,12 +30,14 @@
   ansible.builtin.set_fact:
     pg_data_partition: >-
       {{ pg_data_device }}{{ '1' if (pg_data_device | regex_search('nvme')) else '1' }}
+  when: pg_data_device_stat.stat.exists
 
 - name: Format EBS partition as ext4 (skipped if already formatted)
   community.general.filesystem:
     fstype: ext4
     dev: "{{ pg_data_device }}1"
     force: false
+  when: pg_data_device_stat.stat.exists
 
 - name: Create PostgreSQL data directory mount point
   ansible.builtin.file:
@@ -44,6 +46,7 @@
     mode: "0700"
     owner: postgres
     group: postgres
+  when: pg_data_device_stat.stat.exists
 
 - name: Mount EBS partition to data directory (persistent via fstab)
   ansible.posix.mount:
@@ -52,6 +55,7 @@
     fstype: ext4
     opts: defaults,noatime
     state: mounted
+  when: pg_data_device_stat.stat.exists
 
 # --- PostgreSQL installation ---
 - name: Install python3-psycopg2 (required by community.postgresql modules)
