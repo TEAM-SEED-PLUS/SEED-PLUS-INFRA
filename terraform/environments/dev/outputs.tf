@@ -51,3 +51,11 @@ output "vpc_id" {
   description = "ID of the VPC"
   value       = module.vpc.vpc_id
 }
+
+# -----------------------------------------------------------------------------
+# CloudWatch
+# -----------------------------------------------------------------------------
+output "cloudwatch_dashboard_name" {
+  description = "Name of the CloudWatch dashboard"
+  value       = module.cloudwatch.dashboard_name
+}

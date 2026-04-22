@@ -298,3 +298,19 @@ module "ebs" {
   availability_zone = var.availability_zone
   instance_id       = module.ec2_db.instance_id
 }
+
+# -----------------------------------------------------------------------------
+# 12. CloudWatch Dashboard – per-tier metrics (CPU, Network, Memory, Disk, EBS)
+# -----------------------------------------------------------------------------
+module "cloudwatch" {
+  source = "../../modules/cloudwatch"
+
+  project         = local.project
+  environment     = var.environment
+  aws_region      = var.aws_region
+  web_instance_id = module.ec2_web.instance_id
+  app_instance_id = module.ec2_app.instance_id
+  db_instance_id  = module.ec2_db.instance_id
+  nat_instance_id = module.nat_instance.instance_id
+  ebs_volume_id   = module.ebs.volume_id
+}
