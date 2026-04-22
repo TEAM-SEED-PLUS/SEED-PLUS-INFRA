@@ -31,6 +31,11 @@
     filename: docker
     state: present
 
+- name: Check if Docker apt repository is configured
+  ansible.builtin.stat:
+    path: /etc/apt/sources.list.d/docker.list
+  register: docker_repo_stat
+
 - name: Install Docker CE packages
   ansible.builtin.apt:
     name:
@@ -41,12 +46,19 @@
       - docker-compose-plugin
     state: present
     update_cache: true
+  when: docker_repo_stat.stat.exists
+
+- name: Check if Docker binary exists
+  ansible.builtin.stat:
+    path: /usr/bin/docker
+  register: docker_binary_stat
 
 - name: Add ubuntu user to docker group
   ansible.builtin.user:
     name: ubuntu
     groups: docker
     append: true
+  when: docker_binary_stat.stat.exists
 
 - name: Configure Docker daemon
   ansible.builtin.template:
@@ -54,12 +66,19 @@
     dest: /etc/docker/daemon.json
     mode: "0644"
   notify: Restart docker
+  when: docker_binary_stat.stat.exists
+
+- name: Check if Docker service unit exists
+  ansible.builtin.stat:
+    path: /lib/systemd/system/docker.service
+  register: docker_service_stat
 
 - name: Enable and start Docker service
   ansible.builtin.service:
     name: docker
     enabled: true
     state: started
+  when: docker_service_stat.stat.exists
 
 - name: Include weekly prune cron task
   ansible.builtin.include_tasks: prune_cron.yml
