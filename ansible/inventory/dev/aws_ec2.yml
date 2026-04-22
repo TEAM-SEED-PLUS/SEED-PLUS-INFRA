@@ -10,6 +10,9 @@ filters:
   tag:Environment: dev
   instance-state-name: running
 
+hostnames:
+  - tag:Name
+
 keyed_groups:
   # Groups: tier_web / tier_app / tier_db (from Tier tag on ec2 module instances)
   - key: ec2_tags.Tier

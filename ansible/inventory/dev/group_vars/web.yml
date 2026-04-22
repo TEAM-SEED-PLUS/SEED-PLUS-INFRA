@@ -1,6 +1,2 @@
 ---
-hostname: "seed-plus-dev-web"
-
-# Nginx: whoami container binds to loopback; Nginx fronts it on port 80
-whoami_container_host_port: 8081
-whoami_container_name: "seed-plus-web-test"
+# Renamed to tier_web.yml — this file is intentionally empty.

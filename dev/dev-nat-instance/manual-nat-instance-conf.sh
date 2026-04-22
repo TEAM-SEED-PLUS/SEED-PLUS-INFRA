@@ -1,86 +1,142 @@
-### Step 1 — IP 포워딩 활성화 (sysctl)
+cat > ~/bin/seed-sync-tf-outputs <<'EOF'
+#!/usr/bin/env bash
+set -Eeuo pipefail
 
-# 즉시 적용
-sudo sysctl -w net.ipv4.ip_forward=1
-sudo sysctl -w net.ipv4.conf.all.send_redirects=0
-sudo sysctl -w net.ipv4.conf.default.send_redirects=0
-sudo sysctl -w net.ipv4.conf.all.accept_redirects=0
-sudo sysctl -w net.ipv4.conf.default.accept_redirects=0
+# Read-only sync script:
+# - Reads the current Terraform state from the configured backend (S3)
+# - Does NOT run terraform plan/apply
+# - Does NOT modify real infrastructure
+# - Generates Ansible vars file from remote state values
 
-# 재부팅 후에도 유지
-cat <<'EOF' | sudo tee /etc/sysctl.d/99-nat.conf
-net.ipv4.ip_forward = 1
-net.ipv4.conf.all.send_redirects = 0
-net.ipv4.conf.default.send_redirects = 0
-net.ipv4.conf.all.accept_redirects = 0
-net.ipv4.conf.default.accept_redirects = 0
+: "${SEED_HOME:=$HOME/Git/SEED-PLUS/SEED-PLUS-INFRA}"
+: "${TF_DIR:=$SEED_HOME/terraform/environments/dev}"
+: "${ANSIBLE_DIR:=$SEED_HOME/ansible}"
+
+OUT_DIR="$ANSIBLE_DIR/inventory/dev/group_vars/all"
+OUT_FILE="$OUT_DIR/terraform_outputs.yml"
+TMP_STATE="$(mktemp)"
+
+cleanup() {
+  rm -f "$TMP_STATE"
+}
+trap cleanup EXIT
+
+mkdir -p "$OUT_DIR"
+
+echo "[INFO] SEED_HOME=$SEED_HOME"
+echo "[INFO] TF_DIR=$TF_DIR"
+echo "[INFO] ANSIBLE_DIR=$ANSIBLE_DIR"
+echo "[INFO] OUT_FILE=$OUT_FILE"
+
+cd "$TF_DIR"
+
+# Backend init is safe and required so Terraform knows which remote state to read.
+echo "[INFO] Running terraform init..."
+terraform init -input=false -no-color >/dev/null
+
+# Read the raw state snapshot from the configured remote backend.
+# This is read-only and does not change infrastructure.
+echo "[INFO] Pulling remote state from backend..."
+terraform state pull > "$TMP_STATE"
+
+# Read a root output value if it already exists in state.
+state_output() {
+  local key="$1"
+  jq -er --arg k "$key" '.outputs[$k].value // empty' "$TMP_STATE" 2>/dev/null || true
+}
+
+# Find an EC2 instance attribute by Name tag from raw state.
+find_instance_attr_by_name() {
+  local name="$1"
+  local attr="$2"
+  jq -er --arg name "$name" --arg attr "$attr" '
+    [
+      .resources[]
+      | select(.mode == "managed" and .type == "aws_instance")
+      | .instances[]?.attributes
+      | select(.tags.Name? == $name)
+      | .[$attr]
+    ]
+    | map(select(. != null and . != ""))
+    | first // empty
+  ' "$TMP_STATE" 2>/dev/null || true
+}
+
+# Find an EIP public IP by Name tag from raw state.
+find_eip_public_ip_by_name() {
+  local name="$1"
+  jq -er --arg name "$name" '
+    [
+      .resources[]
+      | select(.mode == "managed" and .type == "aws_eip")
+      | .instances[]?.attributes
+      | select(.tags.Name? == $name)
+      | .public_ip
+    ]
+    | map(select(. != null and . != ""))
+    | first // empty
+  ' "$TMP_STATE" 2>/dev/null || true
+}
+
+require_value() {
+  local key="$1"
+  local value="$2"
+  if [ -z "$value" ]; then
+    echo "[ERROR] Failed to resolve required value: $key" >&2
+    exit 1
+  fi
+}
+
+# Prefer root outputs if they exist in state.
+# Fall back to raw resource attributes from the remote state snapshot.
+web_eip="$(state_output "web_public_ip")"
+[ -n "$web_eip" ] || web_eip="$(find_eip_public_ip_by_name "seed-plus-dev-web")"
+[ -n "$web_eip" ] || web_eip="$(find_instance_attr_by_name "seed-plus-dev-web" "public_ip")"
+
+nat_eip="$(state_output "nat_public_ip")"
+[ -n "$nat_eip" ] || nat_eip="$(state_output "nat_eip")"
+[ -n "$nat_eip" ] || nat_eip="$(find_eip_public_ip_by_name "seed-plus-dev-nat")"
+[ -n "$nat_eip" ] || nat_eip="$(find_instance_attr_by_name "seed-plus-dev-nat" "public_ip")"
+
+app_private_ip="$(state_output "app_private_ip")"
+[ -n "$app_private_ip" ] || app_private_ip="$(find_instance_attr_by_name "seed-plus-dev-app" "private_ip")"
+
+db_private_ip="$(state_output "db_private_ip")"
+[ -n "$db_private_ip" ] || db_private_ip="$(find_instance_attr_by_name "seed-plus-dev-db" "private_ip")"
+
+require_value "web_eip" "$web_eip"
+require_value "nat_eip" "$nat_eip"
+require_value "app_private_ip" "$app_private_ip"
+require_value "db_private_ip" "$db_private_ip"
+
+cat > "$OUT_FILE" <<EOF2
+---
+# Auto-generated from Terraform remote state.
+# Read-only sync source: terraform state pull
+# Do not edit manually.
+# Re-generate with: seed-sync-tf-outputs
+#
+# Mapping note:
+# - web_eip       comes from root output web_public_ip or matching state resource
+# - nat_eip       comes from root output nat_public_ip/nat_eip or matching state resource
+# - app_private_ip comes from root output app_private_ip or matching state resource
+# - db_private_ip comes from root output db_private_ip or matching state resource
+
+web_eip: "$web_eip"
+nat_eip: "$nat_eip"
+app_private_ip: "$app_private_ip"
+db_private_ip: "$db_private_ip"
+EOF2
+
+chmod 600 "$OUT_FILE"
+
+echo "[INFO] Generated: $OUT_FILE"
+echo "[INFO] Resolved keys:"
+echo "  web_eip=$web_eip"
+echo "  nat_eip=$nat_eip"
+echo "  app_private_ip=$app_private_ip"
+echo "  db_private_ip=$db_private_ip"
 EOF
 
-sudo sysctl -p /etc/sysctl.d/99-nat.conf
-
-### Step 2 — iptables 규칙 설정
-
-# 초기화
-sudo iptables -F
-sudo iptables -t nat -F
-sudo iptables -X
-
-# ESTABLISHED/RELATED 먼저 추가 (기존 연결 보호)
-sudo iptables -A INPUT  -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
-sudo iptables -A OUTPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
-sudo iptables -A FORWARD -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
-
-# Loopback 허용
-sudo iptables -A INPUT  -i lo -j ACCEPT
-sudo iptables -A OUTPUT -o lo -j ACCEPT
-
-# SSH inbound 허용
-sudo iptables -A INPUT -p tcp --dport 22 -m conntrack --ctstate NEW -j ACCEPT
-
-# SSM Agent 아웃바운드 HTTPS 허용
-sudo iptables -A OUTPUT -p tcp --dport 443 -j ACCEPT
-
-# DNS 아웃바운드 허용                                                                                                                                                          
-sudo iptables -A OUTPUT -p udp --dport 53 -j ACCEPT                                                                                                                          
-sudo iptables -A OUTPUT -p tcp --dport 53 -j ACCEPT
-
-# HTTP 아웃바운드 허용 (apt 저장소)
-sudo iptables -A OUTPUT -p tcp --dport 80 -j ACCEPT
-
-# ProxyJump용 SSH 아웃바운드 허용 (private subnet 대상)
-sudo iptables -A OUTPUT -p tcp --dport 22 -d 10.0.2.0/24 -j ACCEPT
-sudo iptables -A OUTPUT -p tcp --dport 22 -d 10.0.3.0/24 -j ACCEPT
-
-# Private Subnet → 인터넷 HTTP/HTTPS 포워딩
-sudo iptables -A FORWARD -i ens5 -s 10.0.2.0/24 -p tcp --dport 80  -j ACCEPT
-sudo iptables -A FORWARD -i ens5 -s 10.0.2.0/24 -p tcp --dport 443 -j ACCEPT
-sudo iptables -A FORWARD -i ens5 -s 10.0.3.0/24 -p tcp --dport 80  -j ACCEPT
-sudo iptables -A FORWARD -i ens5 -s 10.0.3.0/24 -p tcp --dport 443 -j ACCEPT
-
-# MASQUERADE
-sudo iptables -t nat -A POSTROUTING -s 10.0.2.0/24 -o ens5 -j MASQUERADE
-sudo iptables -t nat -A POSTROUTING -s 10.0.3.0/24 -o ens5 -j MASQUERADE
-
-# 기본 정책 DROP (규칙 추가 완료 후 마지막에 적용)
-sudo iptables -P INPUT   DROP
-sudo iptables -P FORWARD DROP
-sudo iptables -P OUTPUT  DROP
-
-# 영구 저장
-sudo apt update
-sudo apt-get install -y iptables-persistent
-sudo netfilter-persistent save
-
-### 검증
-
-# 포워딩 활성화 확인 (1이면 정상)
-sysctl net.ipv4.ip_forward
-
-# MASQUERADE 규칙 확인
-sudo iptables -t nat -L POSTROUTING -n -v
-
-# FORWARD 체인 확인
-sudo iptables -L FORWARD -n -v
-
-# App 또는 DB 인스턴스에 SSH 접속 후 아래로 외부 통신 확인:
-curl -I https://google.com
+chmod +x ~/bin/seed-sync-tf-outputs
+hash -r

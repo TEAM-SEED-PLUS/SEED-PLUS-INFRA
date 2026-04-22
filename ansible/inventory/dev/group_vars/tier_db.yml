@@ -1,0 +1,14 @@
+---
+hostname: "seed-plus-dev-db"
+
+# ProxyJump via NAT instance for SSH access from control node
+ansible_ssh_common_args: "-o ProxyJump=ubuntu@{{ nat_eip }} -o StrictHostKeyChecking=no"
+
+pg_version: "17"
+pg_data_dir: /mnt/pgdata
+pg_data_device: /dev/xvdb
+pg_cluster_name: main
+
+pg_db_name: seedplus
+pg_db_user: seedplus
+pg_password: "{{ vault_pg_password }}"

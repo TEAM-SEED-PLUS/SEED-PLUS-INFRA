@@ -33,9 +33,12 @@ terraform output -json -no-color > "$TMP_JSON"
 echo "[INFO] Available terraform output keys:"
 jq -r 'keys[]' "$TMP_JSON"
 
-has_tf_output() {
+require_tf_output() {
   local key="$1"
-  jq -e --arg k "$key" '.[$k].value' "$TMP_JSON" >/dev/null 2>&1
+  jq -e --arg k "$key" '.[$k].value' "$TMP_JSON" >/dev/null || {
+    echo "[ERROR] Required terraform output is missing: $key" >&2
+    exit 1
+  }
 }
 
 tf_value() {
@@ -43,39 +46,35 @@ tf_value() {
   jq -r --arg k "$key" '.[$k].value' "$TMP_JSON"
 }
 
-require_tf_output() {
-  local key="$1"
-  local hint="${2:-}"
-  if ! has_tf_output "$key"; then
-    echo "[ERROR] Required terraform output is missing: $key" >&2
-    if [ -n "$hint" ]; then
-      echo "[ERROR] Hint: $hint" >&2
-    fi
-    exit 1
-  fi
-}
-
-# Required by current hosts.yml
-require_tf_output "web_public_ip" "hosts.yml uses web_eip, so this script maps web_public_ip -> web_eip."
-require_tf_output "app_private_ip" "hosts.yml uses app_private_ip directly."
-require_tf_output "db_private_ip" "hosts.yml uses db_private_ip, but outputs.tf does not currently expose it."
-require_tf_output "nat_eip" "hosts.yml uses nat_eip, but outputs.tf does not currently expose it."
+# Terraform output names actually defined in outputs.tf
+require_tf_output "web_public_ip"
+require_tf_output "app_private_ip"
+require_tf_output "db_private_ip"
+require_tf_output "nat_public_ip"
 
 cat > "$OUT_FILE" <<EOF2
 ---
 # Auto-generated from Terraform root outputs.
-# Do not edit manually. Re-generate with: seed-sync-tf-outputs
+# Do not edit manually.
+# Re-generate with: seed-sync-tf-outputs
+#
+# Mapping:
+# - web_public_ip  -> web_eip
+# - nat_public_ip  -> nat_eip
+# - app_private_ip -> app_private_ip
+# - db_private_ip  -> db_private_ip
 
 web_eip: "$(tf_value "web_public_ip")"
+nat_eip: "$(tf_value "nat_public_ip")"
 app_private_ip: "$(tf_value "app_private_ip")"
 db_private_ip: "$(tf_value "db_private_ip")"
-nat_eip: "$(tf_value "nat_eip")"
 EOF2
 
 chmod 600 "$OUT_FILE"
 
 echo "[INFO] Generated: $OUT_FILE"
 ls -l "$OUT_FILE"
+echo "[INFO] Done."
 EOF
 
 chmod +x ~/bin/seed-sync-tf-outputs
