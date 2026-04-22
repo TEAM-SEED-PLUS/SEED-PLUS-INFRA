@@ -127,6 +127,18 @@ data "aws_iam_policy_document" "cloudwatch_agent" {
       "logs:PutLogEvents",
       "logs:DescribeLogGroups",
       "logs:DescribeLogStreams",
+      "logs:PutRetentionPolicy",
+    ]
+    resources = ["*"]
+  }
+
+  # Required for CloudWatch Agent to attach EC2 tag values as metric dimensions
+  # ec2:DescribeTags does not support resource-level restrictions
+  statement {
+    sid    = "EC2DescribeTags"
+    effect = "Allow"
+    actions = [
+      "ec2:DescribeTags",
     ]
     resources = ["*"]
   }

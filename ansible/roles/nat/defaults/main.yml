@@ -1,0 +1,4 @@
+---
+# nat_interface is auto-detected from ansible_default_ipv4.interface at runtime
+# Override here only if auto-detection produces wrong interface
+# nat_interface: ens5

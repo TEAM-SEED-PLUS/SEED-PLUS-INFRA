@@ -1,0 +1,10 @@
+---
+- name: Schedule weekly docker system prune
+  ansible.builtin.cron:
+    name: docker weekly prune
+    user: root
+    weekday: "0"
+    hour: "3"
+    minute: "0"
+    job: >-
+      docker system prune -af --filter "until=168h" >> /var/log/docker-prune.log 2>&1

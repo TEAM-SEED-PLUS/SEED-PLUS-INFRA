@@ -1,0 +1,8 @@
+---
+- name: Bootstrap all hosts with common configuration
+  hosts: all
+  become: true
+  gather_facts: true
+  roles:
+    - role: common
+      tags: [bootstrap, common]

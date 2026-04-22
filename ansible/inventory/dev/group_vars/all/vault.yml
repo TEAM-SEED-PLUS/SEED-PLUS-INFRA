@@ -1,0 +1,6 @@
+---
+# IMPORTANT: Encrypt this file before committing.
+#   wsl ansible-vault encrypt inventory/dev/group_vars/all/vault.yml
+#
+# vault_pg_password: "REPLACE_WITH_STRONG_PASSWORD"
+# vault_pg_admin_password: "REPLACE_WITH_STRONG_ADMIN_PASSWORD"

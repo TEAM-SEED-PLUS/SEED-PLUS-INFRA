@@ -1,0 +1,48 @@
+---
+- name: Install nginx
+  ansible.builtin.apt:
+    name: nginx
+    state: present
+    update_cache: true
+
+- name: Remove default nginx site
+  ansible.builtin.file:
+    path: /etc/nginx/sites-enabled/default
+    state: absent
+  notify: Reload nginx
+
+- name: Deploy nginx site configuration
+  ansible.builtin.template:
+    src: nginx_site.conf.j2
+    dest: /etc/nginx/sites-available/{{ nginx_site_name }}.conf
+    mode: "0644"
+    validate: nginx -t -c /etc/nginx/nginx.conf
+  notify: Reload nginx
+
+- name: Enable nginx site
+  ansible.builtin.file:
+    src: /etc/nginx/sites-available/{{ nginx_site_name }}.conf
+    dest: /etc/nginx/sites-enabled/{{ nginx_site_name }}.conf
+    state: link
+  notify: Reload nginx
+
+- name: Pull whoami container image
+  community.docker.docker_image:
+    name: "{{ whoami_container_image }}"
+    source: pull
+
+- name: Run whoami test container (loopback-only, fronted by Nginx on port 80)
+  community.docker.docker_container:
+    name: "{{ whoami_container_name }}"
+    image: "{{ whoami_container_image }}"
+    state: started
+    restart_policy: always
+    ports:
+      # Bind to loopback only — not exposed directly; Nginx proxies via /test
+      - "127.0.0.1:{{ whoami_container_host_port }}:80"
+
+- name: Enable and start nginx
+  ansible.builtin.service:
+    name: nginx
+    enabled: true
+    state: started

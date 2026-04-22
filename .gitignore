@@ -1,7 +1,7 @@
 # =====================
 # Trivy
 # =====================
-.trivyignore
+# .trivyignore is intentionally committed — Trivy suppression rules are config, not secrets
 
 # =====================
 # Terraform
@@ -10,7 +10,7 @@
 *.tfstate
 *.tfstate.*
 *.tfstate.backup
-.terraform.lock.hcl
+# .terraform.lock.hcl is intentionally committed — locks provider versions for reproducibility
 crash.log
 crash.*.log
 override.tf
@@ -35,6 +35,9 @@ ansible/vault_password_file
 ansible/vault_pass
 *.vault
 .vault_pass
+
+# Auto-generated from AWS — contains live IPs; sync via 'make ansible-sync'
+ansible/inventory/dev/group_vars/all/terraform_outputs.yml
 
 # 인벤토리 파일 (호스트 정보 포함)
 ansible/inventory/production

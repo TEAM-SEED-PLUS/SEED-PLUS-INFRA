@@ -1,0 +1,20 @@
+---
+ansible_user: ubuntu
+ansible_python_interpreter: /usr/bin/python3
+
+# Sync with: terraform/environments/dev/variables.tf
+# Run 'make ansible-sync' to update terraform_outputs.yml with live IPs
+project: seed-plus
+environment: dev
+aws_region: ap-northeast-2
+
+timezone: Asia/Seoul
+
+# Tier port definitions — keep in sync with Terraform variables.tf
+app_port: 8080
+db_port: 15921
+
+# Subnet CIDRs — keep in sync with Terraform vpc module variables
+web_subnet_cidr: "10.0.1.0/24"
+app_subnet_cidr: "10.0.2.0/24"
+db_subnet_cidr: "10.0.3.0/24"

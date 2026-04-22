@@ -1,0 +1,56 @@
+# Trivy IaC misconfigurations intentionally suppressed for this PoC environment.
+# Each entry documents the rationale for acceptance.
+
+# AWS-0104: Security group rule allows unrestricted egress to any IP address
+# Rationale: Inter-tier egress (web→app, app→db) is already constrained via SG references.
+#            Remaining internet egress is intentionally limited to TCP 443/80 only
+#            (OS package updates, AWS service endpoints). Trivy flags any 0.0.0.0/0
+#            CIDR in egress regardless of port restriction.
+AWS-0104
+
+# AWS-0123: IAM group does not enforce MFA
+# Rationale: Developer IAM users have programmatic access only (no console login profile).
+#            MFA for API access requires a separate STS token-exchange workflow
+#            (aws sts get-session-token --serial-number ... --token-code ...) which is
+#            deferred to the production hardening phase.
+AWS-0123
+
+# AWS-0025: DynamoDB table does not use a customer-managed KMS key
+# Rationale: State lock table holds no sensitive data beyond lock metadata.
+#            AWS-managed encryption is sufficient for this PoC scope.
+AWS-0025
+
+# AWS-0024: DynamoDB point-in-time recovery not enabled
+# Rationale: The DynamoDB table is used solely for Terraform state locking.
+#            PITR is not needed; accidental deletion is recoverable by recreating the table.
+AWS-0024
+
+# AWS-0027: EBS volume does not use a customer-managed KMS key
+# Rationale: EBS volumes are encrypted at rest (encrypted = true). CMK rotation
+#            is deferred until the production environment is provisioned.
+AWS-0027
+
+# AWS-0089: S3 bucket access logging disabled
+# Rationale: A dedicated logging bucket is not part of this PoC scope.
+#            Access logging will be enabled when the environment is promoted to staging.
+AWS-0089
+
+# AWS-0090: S3 bucket versioning not enabled
+# Rationale: The app bucket (s3_app) is an object storage bucket, not a state or backup bucket.
+#            Versioning is intentionally disabled to avoid unexpected storage costs in dev.
+AWS-0090
+
+# AWS-0132: S3 bucket does not encrypt data with a customer-managed KMS key
+# Rationale: Buckets are encrypted with SSE-S3 (AES-256). CMK (SSE-KMS) adoption
+#            is planned for the production environment where compliance is required.
+AWS-0132
+
+# AWS-0164: Subnet auto-assigns public IP addresses
+# Rationale: The web subnet is intentionally public-facing in this single-AZ PoC.
+#            No NAT Gateway is deployed; public IP assignment is required for internet access.
+AWS-0164
+
+# AWS-0178: VPC Flow Logs not enabled
+# Rationale: Flow Logs incur CloudWatch Logs storage costs. Deferred until staging
+#            where network traffic analysis is required.
+AWS-0178

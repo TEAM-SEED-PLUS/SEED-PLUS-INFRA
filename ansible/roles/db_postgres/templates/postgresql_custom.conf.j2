@@ -1,0 +1,6 @@
+# seed-plus custom settings — placed in conf.d to override defaults without replacing postgresql.conf
+listen_addresses = '*'
+port = {{ db_port }}
+log_rotation_age = 1d
+log_rotation_size = 100MB
+log_filename = 'postgresql-%Y-%m-%d.log'

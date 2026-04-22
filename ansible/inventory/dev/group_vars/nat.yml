@@ -1,0 +1,10 @@
+---
+hostname: "seed-plus-dev-nat"
+
+# Auto-detected at runtime via ansible_default_ipv4.interface fact
+# Explicit override only if auto-detection fails
+# nat_interface: ens5
+
+private_cidrs:
+  - "{{ app_subnet_cidr }}"
+  - "{{ db_subnet_cidr }}"

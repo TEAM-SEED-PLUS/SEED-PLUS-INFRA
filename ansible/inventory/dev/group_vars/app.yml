@@ -1,0 +1,8 @@
+---
+hostname: "seed-plus-dev-app"
+
+# ProxyJump via NAT instance for SSH access from control node
+ansible_ssh_common_args: "-o ProxyJump=ubuntu@{{ nat_eip }} -o StrictHostKeyChecking=no"
+
+app_container_name: "seed-plus-app"
+app_container_image: "traefik/whoami:latest"

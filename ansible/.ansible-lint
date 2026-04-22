@@ -1,0 +1,9 @@
+profile: production
+exclude_paths:
+  - .git/
+  - .terraform/
+warn_list:
+  - experimental
+  - role-name
+skip_list:
+  - yaml[line-length]

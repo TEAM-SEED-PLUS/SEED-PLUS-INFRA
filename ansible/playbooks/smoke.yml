@@ -1,0 +1,60 @@
+---
+- name: Smoke test — Web tier Nginx
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Verify web /healthz returns 200
+      ansible.builtin.uri:
+        url: "http://{{ web_eip }}/healthz"
+        status_code: 200
+        timeout: 10
+      register: healthz_result
+
+    - name: Verify web /test (whoami container) returns 200
+      ansible.builtin.uri:
+        url: "http://{{ web_eip }}/test"
+        status_code: 200
+        timeout: 10
+
+- name: Smoke test — Web to App connectivity
+  hosts: tier_web
+  become: false
+  gather_facts: false
+  tasks:
+    - name: Verify web → app reverse proxy (port {{ app_port }})
+      ansible.builtin.uri:
+        url: "http://{{ app_private_ip }}:{{ app_port }}/"
+        status_code: 200
+        timeout: 10
+
+- name: Smoke test — App to DB connectivity
+  hosts: tier_app
+  become: false
+  gather_facts: false
+  tasks:
+    - name: Verify TCP connectivity to DB port {{ db_port }}
+      ansible.builtin.wait_for:
+        host: "{{ db_private_ip }}"
+        port: "{{ db_port }}"
+        timeout: 10
+        state: started
+
+- name: Smoke test — PostgreSQL on DB host
+  hosts: tier_db
+  become: true
+  gather_facts: false
+  tasks:
+    - name: Verify pg_isready on port {{ db_port }}
+      ansible.builtin.command: >
+        pg_isready -U postgres -p {{ db_port }} -h 127.0.0.1
+      register: pg_ready
+      changed_when: false
+      failed_when: pg_ready.rc != 0
+
+    - name: Verify SELECT 1 executes
+      community.postgresql.postgresql_query:
+        db: postgres
+        query: "SELECT 1 AS result"
+        login_user: postgres
+        port: "{{ db_port }}"
+      become_user: postgres

@@ -1,0 +1,4 @@
+---
+app_container_image: "traefik/whoami:latest"
+app_container_name: "seed-plus-app"
+# app_port comes from group_vars/all/main.yml

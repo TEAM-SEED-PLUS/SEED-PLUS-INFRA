@@ -1,0 +1,30 @@
+---
+# Dynamic inventory via Amazon EC2 plugin.
+# Prerequisites (WSL): pip install boto3 botocore; aws configure
+plugin: amazon.aws.aws_ec2
+regions:
+  - ap-northeast-2
+
+filters:
+  tag:Project: seed-plus
+  tag:Environment: dev
+  instance-state-name: running
+
+keyed_groups:
+  # Groups: tier_web / tier_app / tier_db (from Tier tag on ec2 module instances)
+  - key: tags.Tier
+    prefix: tier
+    separator: "_"
+  # Group: role_nat_instance (from Role tag on nat_instance module)
+  - key: tags.Role
+    prefix: role
+    separator: "_"
+
+compose:
+  # Public IP for web/NAT, private IP for app/db
+  ansible_host: >-
+    public_ip_address
+    if (tags.get('Tier') == 'web' or tags.get('Role') == 'nat-instance')
+    else private_ip_address
+  # Friendly hostname from Name tag
+  ansible_host_key_checking: "False"

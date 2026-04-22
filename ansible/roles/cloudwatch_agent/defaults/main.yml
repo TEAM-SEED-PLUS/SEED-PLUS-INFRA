@@ -1,0 +1,6 @@
+---
+cwa_metrics_interval: 60
+cwa_log_group_prefix: "/seed-plus/dev"
+
+# Extra log files injected per-role (list of {file_path, log_group_name, log_stream_name})
+cwa_extra_logs: []

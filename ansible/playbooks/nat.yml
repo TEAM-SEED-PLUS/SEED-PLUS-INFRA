@@ -1,0 +1,16 @@
+---
+- name: Configure NAT instance
+  hosts: role_nat_instance
+  become: true
+  gather_facts: true
+  roles:
+    - role: common
+      tags: [bootstrap, common]
+    - role: fail2ban
+      tags: [hardening, fail2ban]
+    - role: nat
+      tags: [nat]
+    - role: cloudwatch_agent
+      tags: [monitoring, cloudwatch]
+      vars:
+        cwa_extra_logs: []

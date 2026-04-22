@@ -1,0 +1,10 @@
+---
+# Master playbook — runs all tiers in dependency order:
+#   1. NAT (provides internet egress for private tiers)
+#   2. DB  (app depends on DB being ready)
+#   3. App
+#   4. Web (depends on app_private_ip)
+- import_playbook: nat.yml
+- import_playbook: db.yml
+- import_playbook: app.yml
+- import_playbook: web.yml

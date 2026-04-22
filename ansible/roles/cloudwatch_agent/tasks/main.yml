@@ -1,0 +1,29 @@
+---
+- name: Set CloudWatch Agent package architecture
+  ansible.builtin.set_fact:
+    cwa_arch: "{{ 'arm64' if ansible_architecture == 'aarch64' else 'amd64' }}"
+
+- name: Download CloudWatch Agent package
+  ansible.builtin.get_url:
+    url: "https://s3.amazonaws.com/amazoncloudwatch-agent/ubuntu/{{ cwa_arch }}/latest/amazon-cloudwatch-agent.deb"
+    dest: /tmp/amazon-cloudwatch-agent.deb
+    mode: "0644"
+    force: false
+
+- name: Install CloudWatch Agent package
+  ansible.builtin.apt:
+    deb: /tmp/amazon-cloudwatch-agent.deb
+    state: present
+
+- name: Deploy CloudWatch Agent configuration
+  ansible.builtin.template:
+    src: amazon-cloudwatch-agent.json.j2
+    dest: /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
+    mode: "0644"
+  notify: Restart cloudwatch-agent
+
+- name: Enable and start CloudWatch Agent
+  ansible.builtin.service:
+    name: amazon-cloudwatch-agent
+    enabled: true
+    state: started

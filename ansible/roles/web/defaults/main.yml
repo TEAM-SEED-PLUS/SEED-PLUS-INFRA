@@ -1,0 +1,6 @@
+---
+nginx_site_name: seed-plus
+
+# whoami test container: bound to loopback only, fronted by Nginx on port 80
+whoami_container_image: "traefik/whoami:latest"
+# whoami_container_name and whoami_container_host_port come from group_vars/web.yml

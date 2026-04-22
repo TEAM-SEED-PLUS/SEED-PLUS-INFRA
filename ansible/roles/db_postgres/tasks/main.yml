@@ -1,0 +1,175 @@
+---
+# --- EBS volume setup ---
+- name: Install parted
+  ansible.builtin.apt:
+    name: parted
+    state: present
+
+- name: Check if EBS device has a partition table
+  community.general.parted:
+    device: "{{ pg_data_device }}"
+    unit: MiB
+  register: pg_disk_info
+
+- name: Create GPT partition on EBS device (first run only)
+  community.general.parted:
+    device: "{{ pg_data_device }}"
+    number: 1
+    state: present
+    fs_type: ext4
+    label: gpt
+  when: pg_disk_info.partitions | length == 0
+
+- name: Set pg_data_partition fact
+  ansible.builtin.set_fact:
+    pg_data_partition: >-
+      {{ pg_data_device }}{{ '1' if (pg_data_device | regex_search('nvme')) else '1' }}
+
+- name: Format EBS partition as ext4 (skipped if already formatted)
+  community.general.filesystem:
+    fstype: ext4
+    dev: "{{ pg_data_device }}1"
+    force: false
+
+- name: Create PostgreSQL data directory mount point
+  ansible.builtin.file:
+    path: "{{ pg_data_dir }}"
+    state: directory
+    mode: "0700"
+    owner: postgres
+    group: postgres
+
+- name: Mount EBS partition to data directory (persistent via fstab)
+  ansible.posix.mount:
+    path: "{{ pg_data_dir }}"
+    src: "{{ pg_data_device }}1"
+    fstype: ext4
+    opts: defaults,noatime
+    state: mounted
+
+# --- PostgreSQL installation ---
+- name: Install python3-psycopg2 (required by community.postgresql modules)
+  ansible.builtin.apt:
+    name: python3-psycopg2
+    state: present
+
+- name: Add PGDG GPG key
+  ansible.builtin.get_url:
+    url: https://www.postgresql.org/media/keys/ACCC4CF8.asc
+    dest: /etc/apt/keyrings/pgdg.asc
+    mode: "0644"
+    force: false
+
+- name: Add PGDG APT repository
+  ansible.builtin.apt_repository:
+    repo: >-
+      deb [signed-by=/etc/apt/keyrings/pgdg.asc]
+      https://apt.postgresql.org/pub/repos/apt
+      {{ ansible_distribution_release }}-pgdg main
+    filename: pgdg
+    state: present
+
+- name: Prevent default cluster creation before install
+  ansible.builtin.copy:
+    dest: /etc/postgresql-common/createcluster.conf
+    content: |
+      create_main_cluster = false
+    mode: "0644"
+    force: false
+
+- name: Install PostgreSQL {{ pg_version }}
+  ansible.builtin.apt:
+    name:
+      - "postgresql-{{ pg_version }}"
+      - "postgresql-client-{{ pg_version }}"
+    state: present
+    update_cache: true
+
+- name: Check if PostgreSQL cluster is already initialized
+  ansible.builtin.stat:
+    path: "{{ pg_data_dir }}/PG_VERSION"
+  register: pg_initialized
+
+- name: Ensure data directory ownership before cluster creation
+  ansible.builtin.file:
+    path: "{{ pg_data_dir }}"
+    owner: postgres
+    group: postgres
+    mode: "0700"
+    state: directory
+
+- name: Create PostgreSQL cluster on {{ pg_data_dir }}
+  ansible.builtin.command: >
+    pg_createcluster {{ pg_version }} {{ pg_cluster_name }}
+    --datadir={{ pg_data_dir }}
+    --start-conf=auto
+  become: true
+  become_user: postgres
+  when: not pg_initialized.stat.exists
+  changed_when: true
+
+# --- Configuration ---
+- name: Deploy custom PostgreSQL configuration
+  ansible.builtin.template:
+    src: postgresql_custom.conf.j2
+    dest: "/etc/postgresql/{{ pg_version }}/{{ pg_cluster_name }}/conf.d/99-seed-plus.conf"
+    owner: postgres
+    group: postgres
+    mode: "0640"
+  notify: Restart postgresql
+
+- name: Deploy pg_hba.conf
+  ansible.builtin.template:
+    src: pg_hba.conf.j2
+    dest: "/etc/postgresql/{{ pg_version }}/{{ pg_cluster_name }}/pg_hba.conf"
+    owner: postgres
+    group: postgres
+    mode: "0640"
+  notify: Reload postgresql
+
+- name: Enable and start PostgreSQL service
+  ansible.builtin.service:
+    name: "postgresql@{{ pg_version }}-{{ pg_cluster_name }}"
+    enabled: true
+    state: started
+
+# Flush handlers so PostgreSQL is running before we create DB/users
+- name: Flush handlers
+  ansible.builtin.meta: flush_handlers
+
+# --- Database and user ---
+- name: Create application database user
+  community.postgresql.postgresql_user:
+    name: "{{ pg_db_user }}"
+    password: "{{ pg_password }}"
+    state: present
+  become: true
+  become_user: postgres
+
+- name: Create application database
+  community.postgresql.postgresql_db:
+    name: "{{ pg_db_name }}"
+    owner: "{{ pg_db_user }}"
+    state: present
+  become: true
+  become_user: postgres
+
+# --- Logical backup cron ---
+- name: Schedule daily pg_dump logical backup
+  ansible.builtin.cron:
+    name: pg_dump daily backup
+    user: postgres
+    minute: "30"
+    hour: "2"
+    job: >-
+      pg_dump -p {{ db_port }} {{ pg_db_name }}
+      | gzip > {{ pg_data_dir }}/backup/{{ pg_db_name }}_$(date +\%F).sql.gz
+      && find {{ pg_data_dir }}/backup -name '*.sql.gz' -mtime +7 -delete
+
+- name: Ensure backup directory exists
+  ansible.builtin.file:
+    path: "{{ pg_data_dir }}/backup"
+    state: directory
+    owner: postgres
+    group: postgres
+    mode: "0700"
