@@ -5,7 +5,7 @@ ansible_python_interpreter: /usr/bin/python3
 # Sync with: terraform/environments/dev/variables.tf
 # Run 'make ansible-sync' to update terraform_outputs.yml with live IPs
 project: seed-plus
-environment: dev
+deploy_env: dev
 aws_region: ap-northeast-2
 
 timezone: Asia/Seoul
