@@ -95,6 +95,14 @@
     jump: ACCEPT
     state: present
 
+- name: Allow NTP outbound (chrony/timesyncd)
+  ansible.builtin.iptables:
+    chain: OUTPUT
+    protocol: udp
+    destination_port: "123"
+    jump: ACCEPT
+    state: present
+
 - name: Allow SSH outbound to private subnets (ProxyJump)
   ansible.builtin.iptables:
     chain: OUTPUT

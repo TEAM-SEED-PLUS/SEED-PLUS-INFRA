@@ -3,8 +3,10 @@
   ansible.builtin.service:
     name: "postgresql@{{ pg_version }}-{{ pg_cluster_name }}"
     state: restarted
+  when: pg_data_device_stat.stat.exists
 
 - name: Reload postgresql
   ansible.builtin.service:
     name: "postgresql@{{ pg_version }}-{{ pg_cluster_name }}"
     state: reloaded
+  when: pg_data_device_stat.stat.exists

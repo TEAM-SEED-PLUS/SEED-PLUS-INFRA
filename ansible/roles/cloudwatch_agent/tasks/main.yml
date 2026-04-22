@@ -23,7 +23,7 @@
 
 - name: Check if CloudWatch Agent service unit exists
   ansible.builtin.stat:
-    path: /lib/systemd/system/amazon-cloudwatch-agent.service
+    path: /etc/systemd/system/amazon-cloudwatch-agent.service
   register: cwa_unit
 
 - name: Deploy CloudWatch Agent configuration

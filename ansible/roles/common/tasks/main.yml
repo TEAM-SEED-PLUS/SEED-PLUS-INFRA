@@ -1,4 +1,10 @@
 ---
+- name: Disable sudoers_audit plugin to prevent sudo initialization errors
+  ansible.builtin.lineinfile:
+    path: /etc/sudo.conf
+    regexp: '^\s*Plugin\s+sudoers_audit'
+    state: absent
+
 - name: Set hostname
   ansible.builtin.hostname:
     name: "{{ hostname }}"

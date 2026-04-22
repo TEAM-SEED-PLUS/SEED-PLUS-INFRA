@@ -8,7 +8,7 @@ ansible_ssh_common_args: >-
 
 pg_version: "17"
 pg_data_dir: /mnt/pgdata
-pg_data_device: /dev/xvdb
+pg_data_device: /dev/nvme1n1
 pg_cluster_name: main
 
 pg_db_name: seedplus

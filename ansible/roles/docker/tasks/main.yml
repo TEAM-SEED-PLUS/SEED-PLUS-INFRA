@@ -82,3 +82,4 @@
 
 - name: Include weekly prune cron task
   ansible.builtin.include_tasks: prune_cron.yml
+  when: docker_binary_stat.stat.exists
