@@ -87,6 +87,11 @@
     mode: "0644"
     force: false
 
+- name: Check if PGDG apt repository is configured
+  ansible.builtin.stat:
+    path: /etc/apt/sources.list.d/pgdg.list
+  register: pgdg_repo_stat
+
 - name: Install PostgreSQL {{ pg_version }}
   ansible.builtin.apt:
     name:
@@ -94,11 +99,18 @@
       - "postgresql-client-{{ pg_version }}"
     state: present
     update_cache: true
+  when: pgdg_repo_stat.stat.exists
+
+- name: Check if PostgreSQL {{ pg_version }} binary exists
+  ansible.builtin.stat:
+    path: "/usr/lib/postgresql/{{ pg_version }}/bin/postgres"
+  register: pg_binary_stat
 
 - name: Check if PostgreSQL cluster is already initialized
   ansible.builtin.stat:
     path: "{{ pg_data_dir }}/PG_VERSION"
   register: pg_initialized
+  when: pg_binary_stat.stat.exists
 
 - name: Ensure data directory ownership before cluster creation
   ansible.builtin.file:
@@ -107,6 +119,7 @@
     group: postgres
     mode: "0700"
     state: directory
+  when: pg_binary_stat.stat.exists
 
 - name: Create PostgreSQL cluster on {{ pg_data_dir }}
   ansible.builtin.command: >
@@ -115,7 +128,7 @@
     --start-conf=auto
   become: true
   become_user: postgres
-  when: not pg_initialized.stat.exists
+  when: pg_binary_stat.stat.exists and not pg_initialized.stat.exists
   changed_when: true
 
 # --- Configuration ---
@@ -127,6 +140,7 @@
     group: postgres
     mode: "0640"
   notify: Restart postgresql
+  when: pg_binary_stat.stat.exists
 
 - name: Deploy pg_hba.conf
   ansible.builtin.template:
@@ -136,12 +150,19 @@
     group: postgres
     mode: "0640"
   notify: Reload postgresql
+  when: pg_binary_stat.stat.exists
+
+- name: Check if PostgreSQL service unit exists
+  ansible.builtin.stat:
+    path: "/lib/systemd/system/postgresql@.service"
+  register: pg_service_stat
 
 - name: Enable and start PostgreSQL service
   ansible.builtin.service:
     name: "postgresql@{{ pg_version }}-{{ pg_cluster_name }}"
     enabled: true
     state: started
+  when: pg_service_stat.stat.exists
 
 # Flush handlers so PostgreSQL is running before we create DB/users
 - name: Flush handlers
@@ -155,6 +176,7 @@
     state: present
   become: true
   become_user: postgres
+  when: pg_binary_stat.stat.exists
 
 - name: Create application database
   community.postgresql.postgresql_db:
@@ -163,6 +185,7 @@
     state: present
   become: true
   become_user: postgres
+  when: pg_binary_stat.stat.exists
 
 # --- Logical backup cron ---
 - name: Schedule daily pg_dump logical backup
@@ -175,6 +198,7 @@
       pg_dump -p {{ db_port }} {{ pg_db_name }}
       | gzip > {{ pg_data_dir }}/backup/{{ pg_db_name }}_$(date +\%F).sql.gz
       && find {{ pg_data_dir }}/backup -name '*.sql.gz' -mtime +7 -delete
+  when: pg_binary_stat.stat.exists
 
 - name: Ensure backup directory exists
   ansible.builtin.file:
@@ -183,3 +207,4 @@
     owner: postgres
     group: postgres
     mode: "0700"
+  when: pg_binary_stat.stat.exists
