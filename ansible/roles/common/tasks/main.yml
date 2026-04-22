@@ -44,11 +44,17 @@
     line: 'Unattended-Upgrade::Automatic-Reboot "false";'
     state: present
 
+- name: Check if systemd-timesyncd unit exists
+  ansible.builtin.stat:
+    path: /lib/systemd/system/systemd-timesyncd.service
+  register: timesyncd_unit
+
 - name: Enable systemd-timesyncd
   ansible.builtin.service:
     name: systemd-timesyncd
     enabled: true
     state: started
+  when: timesyncd_unit.stat.exists
 
 - name: Configure sshd hardening
   ansible.builtin.template:
