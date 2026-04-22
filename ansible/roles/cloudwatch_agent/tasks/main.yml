@@ -10,10 +10,21 @@
     mode: "0644"
     force: false
 
+- name: Check if CloudWatch Agent deb was downloaded
+  ansible.builtin.stat:
+    path: /tmp/amazon-cloudwatch-agent.deb
+  register: cwa_deb
+
 - name: Install CloudWatch Agent package
   ansible.builtin.apt:
     deb: /tmp/amazon-cloudwatch-agent.deb
     state: present
+  when: cwa_deb.stat.exists
+
+- name: Check if CloudWatch Agent service unit exists
+  ansible.builtin.stat:
+    path: /lib/systemd/system/amazon-cloudwatch-agent.service
+  register: cwa_unit
 
 - name: Deploy CloudWatch Agent configuration
   ansible.builtin.template:
@@ -21,9 +32,11 @@
     dest: /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
     mode: "0644"
   notify: Restart cloudwatch-agent
+  when: cwa_unit.stat.exists
 
 - name: Enable and start CloudWatch Agent
   ansible.builtin.service:
     name: amazon-cloudwatch-agent
     enabled: true
     state: started
+  when: cwa_unit.stat.exists

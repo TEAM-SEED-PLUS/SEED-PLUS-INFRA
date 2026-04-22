@@ -70,11 +70,10 @@
   gather_facts: false
   tasks:
     - name: Check if postgres OS user exists
-      ansible.builtin.getent:
-        database: passwd
-        key: postgres
+      ansible.builtin.command: id postgres
       register: postgres_user_check
-      ignore_errors: true
+      changed_when: false
+      failed_when: false
 
     - name: Verify pg_isready on port {{ db_port }}
       ansible.builtin.command: >
@@ -82,7 +81,7 @@
       register: pg_ready
       changed_when: false
       failed_when: pg_ready.rc != 0
-      when: not postgres_user_check.failed
+      when: postgres_user_check.rc == 0
 
     - name: Verify SELECT 1 executes
       community.postgresql.postgresql_query:
@@ -91,4 +90,4 @@
         login_user: postgres
         port: "{{ db_port }}"
       become_user: postgres
-      when: not postgres_user_check.failed
+      when: postgres_user_check.rc == 0
