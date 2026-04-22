@@ -5,6 +5,11 @@
     state: present
     update_cache: true
 
+- name: Check if nginx binary exists
+  ansible.builtin.stat:
+    path: /usr/sbin/nginx
+  register: nginx_binary_stat
+
 - name: Create SSL directory for test certificate
   ansible.builtin.file:
     path: /etc/nginx/ssl
@@ -12,6 +17,7 @@
     mode: "0700"
     owner: root
     group: root
+  when: nginx_binary_stat.stat.exists
 
 - name: Generate self-signed TLS certificate for test deployment
   ansible.builtin.command: >
@@ -22,12 +28,14 @@
   args:
     creates: /etc/nginx/ssl/test.crt
   notify: Reload nginx
+  when: nginx_binary_stat.stat.exists
 
 - name: Remove default nginx site
   ansible.builtin.file:
     path: /etc/nginx/sites-enabled/default
     state: absent
   notify: Reload nginx
+  when: nginx_binary_stat.stat.exists
 
 - name: Deploy nginx site configuration
   ansible.builtin.template:
@@ -36,6 +44,7 @@
     mode: "0644"
     validate: nginx -t -c /etc/nginx/nginx.conf
   notify: Reload nginx
+  when: nginx_binary_stat.stat.exists
 
 - name: Enable nginx site
   ansible.builtin.file:
@@ -43,11 +52,18 @@
     dest: /etc/nginx/sites-enabled/{{ nginx_site_name }}.conf
     state: link
   notify: Reload nginx
+  when: nginx_binary_stat.stat.exists
+
+- name: Check if Docker socket exists
+  ansible.builtin.stat:
+    path: /var/run/docker.sock
+  register: docker_sock_stat
 
 - name: Pull whoami container image
   community.docker.docker_image:
     name: "{{ whoami_container_image }}"
     source: pull
+  when: docker_sock_stat.stat.exists
 
 - name: Run whoami test container (loopback-only, fronted by Nginx on port 80)
   community.docker.docker_container:
@@ -58,9 +74,16 @@
     ports:
       # Bind to loopback only — not exposed directly; Nginx proxies via /test
       - "127.0.0.1:{{ whoami_container_host_port }}:80"
+  when: docker_sock_stat.stat.exists
+
+- name: Check if nginx service unit exists
+  ansible.builtin.stat:
+    path: /lib/systemd/system/nginx.service
+  register: nginx_service_stat
 
 - name: Enable and start nginx
   ansible.builtin.service:
     name: nginx
     enabled: true
     state: started
+  when: nginx_service_stat.stat.exists
