@@ -5,11 +5,17 @@
     name: parted
     state: present
 
+- name: Check if EBS device exists
+  ansible.builtin.stat:
+    path: "{{ pg_data_device }}"
+  register: pg_data_device_stat
+
 - name: Check if EBS device has a partition table
   community.general.parted:
     device: "{{ pg_data_device }}"
     unit: MiB
   register: pg_disk_info
+  when: pg_data_device_stat.stat.exists
 
 - name: Create GPT partition on EBS device (first run only)
   community.general.parted:
@@ -18,7 +24,7 @@
     state: present
     fs_type: ext4
     label: gpt
-  when: pg_disk_info.partitions | length == 0
+  when: pg_data_device_stat.stat.exists and pg_disk_info.partitions | length == 0
 
 - name: Set pg_data_partition fact
   ansible.builtin.set_fact:
