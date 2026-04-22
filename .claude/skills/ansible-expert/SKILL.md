@@ -34,3 +34,4 @@ wsl ansible all -m shell -a "..."
 - ALWAYS run `wsl ansible-lint .` and `trivy config .` strictly just before running a dry-run (`wsl ansible-playbook --check --diff`) or proposing execution. // Changed
 - If any tool reports errors or HIGH/CRITICAL vulnerabilities during this pre-execution check, fix the code automatically before showing the dry-run results to the user. // Changed
 - ALWAYS run a dry-run (`wsl ansible-playbook --check --diff`) first when proposing execution.
+- This repository does not store the real `inventory/dev/group_vars/all/vault.yml`. vault.yml.example` is only a template with placeholder values.

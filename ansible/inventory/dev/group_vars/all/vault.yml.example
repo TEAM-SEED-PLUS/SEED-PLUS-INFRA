@@ -1,0 +1,15 @@
+---
+# This is a template file.
+# Copy this file to vault.yml on your local machine and replace placeholders.
+# Do not commit the real vault.yml file.
+#
+# Local setup steps:
+# 1) cp inventory/dev/group_vars/all/vault.yml.example inventory/dev/group_vars/all/vault.yml
+# 2) vi inventory/dev/group_vars/all/vault.yml
+# 3) ansible-vault encrypt inventory/dev/group_vars/all/vault.yml
+#
+# After encryption, vault.yml will be used automatically by Ansible
+# if ansible.cfg is configured with a vault password file.
+
+vault_pg_password: "REPLACE_WITH_STRONG_APP_DB_PASSWORD"
+vault_pg_admin_password: "REPLACE_WITH_STRONG_ADMIN_PASSWORD"
