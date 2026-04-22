@@ -22,9 +22,15 @@
     mode: "0644"
   notify: Restart fail2ban
 
+- name: Check if fail2ban service unit exists
+  ansible.builtin.stat:
+    path: /lib/systemd/system/fail2ban.service
+  register: fail2ban_unit
+
 - name: Enable and start fail2ban
   ansible.builtin.service:
     name: fail2ban
     enabled: true
     state: started
+  when: fail2ban_unit.stat.exists
 

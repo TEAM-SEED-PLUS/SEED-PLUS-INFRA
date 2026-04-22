@@ -74,7 +74,7 @@
         database: passwd
         key: postgres
       register: postgres_user_check
-      failed_when: false
+      ignore_errors: true
 
     - name: Verify pg_isready on port {{ db_port }}
       ansible.builtin.command: >
