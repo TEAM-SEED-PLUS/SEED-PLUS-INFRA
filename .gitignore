@@ -35,8 +35,10 @@ ansible/vault_password_file
 ansible/vault_pass
 *.vault
 .vault_pass
+# Local secrets - do not commit real vault files
+ansible/inventory/dev/group_vars/all/vault.yml
 
-# Auto-generated from AWS — contains live IPs; sync via 'make ansible-sync'
+# Auto-generated from Terraform/AWS
 ansible/inventory/dev/group_vars/all/terraform_outputs.yml
 
 # 인벤토리 파일 (호스트 정보 포함)
