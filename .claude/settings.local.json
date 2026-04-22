@@ -13,7 +13,10 @@
       "Bash(echo \"bootstrap validate exit: $?\")",
       "Bash(echo \"dev fmt exit: $?\")",
       "Bash(echo \"sg fmt exit: $?\")",
-      "Bash(trivy config *)"
+      "Bash(trivy config *)",
+      "Read(//mnt/c/Users/lenovo/Git/SEED-PLUS/SEED-PLUS-INFRA/**)",
+      "Bash(ansible-lint .)",
+      "Bash(wsl bash *)"
     ]
   }
 }

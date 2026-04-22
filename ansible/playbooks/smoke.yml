@@ -1,20 +1,34 @@
 ---
-- name: Smoke test — Web tier Nginx
+- name: Smoke test — Web tier Nginx (HTTP 80 + HTTPS 443)
   hosts: localhost
   gather_facts: false
   tasks:
-    - name: Verify web /healthz returns 200
+    - name: Verify web HTTP /healthz returns 200 (port 80)
       ansible.builtin.uri:
         url: "http://{{ web_eip }}/healthz"
         status_code: 200
         timeout: 10
       register: healthz_result
 
-    - name: Verify web /test (whoami container) returns 200
+    - name: Verify web HTTP /test (whoami container) returns 200 (port 80)
       ansible.builtin.uri:
         url: "http://{{ web_eip }}/test"
         status_code: 200
         timeout: 10
+
+    - name: Verify web HTTPS /healthz returns 200 (port 443)
+      ansible.builtin.uri:
+        url: "https://{{ web_eip }}/healthz"
+        status_code: 200
+        timeout: 10
+        validate_certs: false
+
+    - name: Verify web HTTPS /test (whoami container) returns 200 (port 443)
+      ansible.builtin.uri:
+        url: "https://{{ web_eip }}/test"
+        status_code: 200
+        timeout: 10
+        validate_certs: false
 
 - name: Smoke test — Web to App connectivity
   hosts: tier_web
@@ -24,6 +38,17 @@
     - name: Verify web → app reverse proxy (port {{ app_port }})
       ansible.builtin.uri:
         url: "http://{{ app_private_ip }}:{{ app_port }}/"
+        status_code: 200
+        timeout: 10
+
+- name: Smoke test — App tier local port 8080
+  hosts: tier_app
+  become: false
+  gather_facts: false
+  tasks:
+    - name: Verify app container responds on port {{ app_port }}
+      ansible.builtin.uri:
+        url: "http://localhost:{{ app_port }}/"
         status_code: 200
         timeout: 10
 

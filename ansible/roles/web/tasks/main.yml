@@ -5,6 +5,24 @@
     state: present
     update_cache: true
 
+- name: Create SSL directory for test certificate
+  ansible.builtin.file:
+    path: /etc/nginx/ssl
+    state: directory
+    mode: "0700"
+    owner: root
+    group: root
+
+- name: Generate self-signed TLS certificate for test deployment
+  ansible.builtin.command: >
+    openssl req -x509 -nodes -days 365 -newkey rsa:2048
+    -keyout /etc/nginx/ssl/test.key
+    -out /etc/nginx/ssl/test.crt
+    -subj "/CN={{ ansible_hostname }}"
+  args:
+    creates: /etc/nginx/ssl/test.crt
+  notify: Reload nginx
+
 - name: Remove default nginx site
   ansible.builtin.file:
     path: /etc/nginx/sites-enabled/default
