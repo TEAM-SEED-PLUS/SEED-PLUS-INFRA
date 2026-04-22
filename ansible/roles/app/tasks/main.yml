@@ -1,8 +1,14 @@
 ---
+- name: Check if Docker socket exists
+  ansible.builtin.stat:
+    path: /var/run/docker.sock
+  register: docker_sock_stat
+
 - name: Pull app container image
   community.docker.docker_image:
     name: "{{ app_container_image }}"
     source: pull
+  when: docker_sock_stat.stat.exists
 
 - name: Run app container on port {{ app_port }}
   community.docker.docker_container:
@@ -18,3 +24,4 @@
       timeout: 5s
       retries: 3
       start_period: 10s
+  when: docker_sock_stat.stat.exists
