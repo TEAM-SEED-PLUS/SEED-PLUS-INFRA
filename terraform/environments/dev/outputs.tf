@@ -13,6 +13,16 @@ output "app_private_ip" {
   value       = module.ec2_app.private_ip
 }
 
+output "nat_public_ip" {
+  description = "Elastic IP of the NAT instance (bastion / default gateway for private subnets)"
+  value       = module.nat_instance.public_ip
+}
+
+output "db_private_ip" {
+  description = "Private IP of the DB tier EC2 instance"
+  value       = module.ec2_db.private_ip
+}
+
 output "db_public_ip" {
   description = "Public IP of the DB tier EC2 instance (direct developer access)"
   value       = module.ec2_db.public_ip
