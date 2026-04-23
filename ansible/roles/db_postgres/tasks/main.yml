@@ -99,6 +99,13 @@
     filename: pgdg
     state: present
 
+# Changed: 설정 파일을 복사하기 전에 목적지 디렉터리가 확실히 존재하도록 생성
+- name: Ensure postgresql-common directory exists
+  ansible.builtin.file:
+    path: /etc/postgresql-common
+    state: directory
+    mode: "0755"
+
 - name: Prevent default cluster creation before install
   ansible.builtin.copy:
     dest: /etc/postgresql-common/createcluster.conf
