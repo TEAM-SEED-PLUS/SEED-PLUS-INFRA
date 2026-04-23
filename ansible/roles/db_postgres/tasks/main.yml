@@ -235,6 +235,15 @@
   when: pg_binary_stat.stat.exists and pg_data_device_stat.stat.exists
 
 # --- Logical backup cron ---
+- name: Ensure backup directory exists
+  ansible.builtin.file:
+    path: "{{ pg_data_dir }}/backup"
+    state: directory
+    owner: postgres
+    group: postgres
+    mode: "0700"
+  when: pg_binary_stat.stat.exists and pg_data_device_stat.stat.exists
+
 - name: Schedule daily pg_dump logical backup
   ansible.builtin.cron:
     name: pg_dump daily backup
@@ -245,13 +254,4 @@
       pg_dump -p {{ db_port }} {{ pg_db_name }}
       | gzip > {{ pg_data_dir }}/backup/{{ pg_db_name }}_$(date +\%F).sql.gz
       && find {{ pg_data_dir }}/backup -name '*.sql.gz' -mtime +7 -delete
-  when: pg_binary_stat.stat.exists and pg_data_device_stat.stat.exists
-
-- name: Ensure backup directory exists
-  ansible.builtin.file:
-    path: "{{ pg_data_dir }}/backup"
-    state: directory
-    owner: postgres
-    group: postgres
-    mode: "0700"
   when: pg_binary_stat.stat.exists and pg_data_device_stat.stat.exists
