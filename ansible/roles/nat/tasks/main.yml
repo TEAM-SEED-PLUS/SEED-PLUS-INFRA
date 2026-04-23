@@ -1,4 +1,49 @@
 ---
+# --- SWAP ---
+- name: Check if swap is already active
+  ansible.builtin.command: swapon --show
+  register: swap_status
+  changed_when: false
+
+- name: Create swapfile
+  ansible.builtin.command: fallocate -l 1G /swapfile
+  when: not swap_status.stdout
+  changed_when: true
+
+- name: Set swapfile permissions
+  ansible.builtin.file:
+    path: /swapfile
+    owner: root
+    group: root
+    mode: "0600"
+  when: not swap_status.stdout
+
+- name: Format swapfile
+  ansible.builtin.command: mkswap /swapfile
+  when: not swap_status.stdout
+  changed_when: true
+
+- name: Enable swapfile
+  ansible.builtin.command: swapon /swapfile
+  when: not swap_status.stdout
+  changed_when: true
+
+- name: Persist swapfile in fstab
+  ansible.builtin.lineinfile:
+    path: /etc/fstab
+    line: "/swapfile none swap sw 0 0"
+    regexp: "^/swapfile"
+    state: present
+
+- name: Set vm.swappiness to 10
+  ansible.posix.sysctl:
+    name: vm.swappiness
+    value: "10"
+    sysctl_file: /etc/sysctl.d/99-swap.conf
+    reload: true
+    state: present
+
+# --- NAT ---
 - name: Detect primary network interface
   ansible.builtin.set_fact:
     nat_interface: "{{ nat_interface | default(ansible_default_ipv4.interface) }}"
