@@ -16,7 +16,8 @@
       "Bash(trivy config *)",
       "Read(//mnt/c/Users/lenovo/Git/SEED-PLUS/SEED-PLUS-INFRA/**)",
       "Bash(ansible-lint .)",
-      "Bash(wsl bash *)"
+      "Bash(wsl bash *)",
+      "PowerShell(wsl bash -c \"cd /mnt/c/Users/lenovo/Git/SEED-PLUS/SEED-PLUS-INFRA/ansible && ansible-lint roles/common/tasks/main.yml 2>&1\")"
     ]
   }
 }
