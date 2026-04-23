@@ -45,6 +45,20 @@
     force: false
   when: pg_data_device_stat.stat.exists and pg_partition_stat.stat.exists
 
+# Changed: postgres 그룹을 미리 생성 (에러 방지용)
+- name: Ensure postgres group exists
+  ansible.builtin.group:
+    name: postgres
+    state: present
+
+# Changed: postgres 유저를 미리 생성 (에러 방지용)
+- name: Ensure postgres user exists
+  ansible.builtin.user:
+    name: postgres
+    group: postgres
+    system: yes
+    state: present
+
 - name: Create PostgreSQL data directory mount point
   ansible.builtin.file:
     path: "{{ pg_data_dir }}"
