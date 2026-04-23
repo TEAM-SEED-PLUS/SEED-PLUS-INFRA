@@ -179,16 +179,6 @@
   notify: Restart postgresql
   when: pg_binary_stat.stat.exists
 
-# Changed: 커스텀 설정 파일이 들어갈 conf.d 디렉터리를 수동으로 먼저 생성
-- name: Ensure conf.d directory exists
-  ansible.builtin.file:
-    path: "/etc/postgresql/{{ pg_version }}/{{ pg_cluster_name }}/conf.d"
-    state: directory
-    owner: postgres
-    group: postgres
-    mode: "0755"
-  when: pg_binary_stat.stat.exists
-
 - name: Deploy custom PostgreSQL configuration
   ansible.builtin.template:
     src: postgresql_custom.conf.j2

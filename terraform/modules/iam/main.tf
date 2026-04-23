@@ -33,9 +33,11 @@ resource "aws_iam_role" "ec2" {
 
 # -----------------------------------------------------------------------------
 # S3 Policy – ListBucket on bucket + PutObject/GetObject on objects
-# ListBucket is required for tools that check object existence before uploading
+# Only created when backup_bucket_name is provided.
 # -----------------------------------------------------------------------------
 data "aws_iam_policy_document" "s3_backup" {
+  count = var.backup_bucket_name != "" ? 1 : 0
+
   statement {
     sid       = "S3BackupList"
     effect    = "Allow"
@@ -55,9 +57,10 @@ data "aws_iam_policy_document" "s3_backup" {
 }
 
 resource "aws_iam_policy" "s3_backup" {
+  count       = var.backup_bucket_name != "" ? 1 : 0
   name        = "${var.project}-${var.environment}-${var.name_suffix}-s3-backup-policy"
   description = "Allow EC2 to list and read/write objects in the backup S3 bucket"
-  policy      = data.aws_iam_policy_document.s3_backup.json
+  policy      = data.aws_iam_policy_document.s3_backup[0].json
 
   tags = {
     Name        = "${var.project}-${var.environment}-${var.name_suffix}-s3-backup-policy"
@@ -67,8 +70,9 @@ resource "aws_iam_policy" "s3_backup" {
 }
 
 resource "aws_iam_role_policy_attachment" "s3_backup" {
+  count      = var.backup_bucket_name != "" ? 1 : 0
   role       = aws_iam_role.ec2.name
-  policy_arn = aws_iam_policy.s3_backup.arn
+  policy_arn = aws_iam_policy.s3_backup[0].arn
 }
 
 # -----------------------------------------------------------------------------

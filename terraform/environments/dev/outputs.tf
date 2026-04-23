@@ -49,11 +49,6 @@ output "s3_app_bucket" {
   value       = module.s3_app.bucket_id
 }
 
-output "s3_backup_bucket" {
-  description = "Name of the EBS backup S3 bucket"
-  value       = module.s3_backup.bucket_id
-}
-
 # -----------------------------------------------------------------------------
 # Networking
 # -----------------------------------------------------------------------------

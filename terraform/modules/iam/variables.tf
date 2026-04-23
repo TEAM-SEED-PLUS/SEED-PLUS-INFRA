@@ -29,6 +29,7 @@ variable "aws_region" {
 }
 
 variable "backup_bucket_name" {
-  description = "Name of the S3 bucket used for backups (scoped in policy ARN)"
+  description = "Name of the S3 bucket used for backups (scoped in policy ARN). Leave empty to skip S3 backup policy."
   type        = string
+  default     = ""
 }

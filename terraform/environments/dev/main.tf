@@ -50,32 +50,16 @@ module "s3_app" {
 }
 
 # -----------------------------------------------------------------------------
-# 2. S3 – EBS snapshot backup bucket (versioning + lifecycle)
-# -----------------------------------------------------------------------------
-module "s3_backup" {
-  source = "../../modules/s3"
-
-  project     = local.project
-  environment = var.environment
-  bucket_name = "seed-plus-${var.environment}-ebs-backup"
-
-  versioning_enabled        = true
-  enable_lifecycle          = true
-  lifecycle_expiration_days = 365
-}
-
-# -----------------------------------------------------------------------------
 # 3a. IAM – Web tier role (no SSM: web EC2 is not an SSM management target)
 # -----------------------------------------------------------------------------
 module "iam_web" {
   source = "../../modules/iam"
 
-  project            = local.project
-  environment        = var.environment
-  name_suffix        = "web"
-  enable_ssm         = false
-  aws_region         = var.aws_region
-  backup_bucket_name = module.s3_backup.bucket_id
+  project     = local.project
+  environment = var.environment
+  name_suffix = "web"
+  enable_ssm  = false
+  aws_region  = var.aws_region
 }
 
 # -----------------------------------------------------------------------------
@@ -85,12 +69,11 @@ module "iam_web" {
 module "iam_private" {
   source = "../../modules/iam"
 
-  project            = local.project
-  environment        = var.environment
-  name_suffix        = "private"
-  enable_ssm         = true
-  aws_region         = var.aws_region
-  backup_bucket_name = module.s3_backup.bucket_id
+  project     = local.project
+  environment = var.environment
+  name_suffix = "private"
+  enable_ssm  = true
+  aws_region  = var.aws_region
 }
 
 # -----------------------------------------------------------------------------

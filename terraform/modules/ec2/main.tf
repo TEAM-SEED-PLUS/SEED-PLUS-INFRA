@@ -23,6 +23,12 @@ resource "aws_instance" "this" {
     encrypted   = true
   }
 
+  # Prevent AMI updates and public-IP flag drift from forcing instance replacement.
+  # associate_public_ip_address is fixed at launch and irrelevant when an EIP is attached.
+  lifecycle {
+    ignore_changes = [ami, associate_public_ip_address]
+  }
+
   tags = {
     Name        = "${var.project}-${var.environment}-${var.tier}"
     Tier        = var.tier
