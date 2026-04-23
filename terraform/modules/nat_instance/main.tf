@@ -52,6 +52,43 @@ resource "aws_iam_role_policy_attachment" "nat_ssm_core" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
 }
 
+# CloudWatch Agent – publish metrics and logs from the NAT instance
+resource "aws_iam_role_policy" "nat_cloudwatch" {
+  name = "${var.project}-${var.environment}-nat-cloudwatch-policy"
+  role = aws_iam_role.nat.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid      = "CloudWatchMetrics"
+        Effect   = "Allow"
+        Action   = ["cloudwatch:PutMetricData"]
+        Resource = "*"
+      },
+      {
+        Sid    = "CloudWatchLogs"
+        Effect = "Allow"
+        Action = [
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:PutLogEvents",
+          "logs:DescribeLogGroups",
+          "logs:DescribeLogStreams",
+          "logs:PutRetentionPolicy",
+        ]
+        Resource = "*"
+      },
+      {
+        Sid      = "EC2DescribeTags"
+        Effect   = "Allow"
+        Action   = ["ec2:DescribeTags"]
+        Resource = "*"
+      }
+    ]
+  })
+}
+
 resource "aws_iam_instance_profile" "nat" {
   name = "${var.project}-${var.environment}-nat-instance-profile"
   role = aws_iam_role.nat.name

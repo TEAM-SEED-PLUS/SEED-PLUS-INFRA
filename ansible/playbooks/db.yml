@@ -11,6 +11,11 @@
     - role: cloudwatch_agent
       tags: [monitoring, cloudwatch]
       vars:
+        cwa_extra_groups:
+          - postgres
+        cwa_disk_resources:
+          - "/"
+          - "/mnt/pgdata"
         cwa_extra_logs:
           - file_path: "/var/log/postgresql/postgresql-{{ pg_version }}-{{ pg_cluster_name }}.log"
             log_group_name: "{{ cwa_log_group_prefix }}/{{ hostname }}/postgresql"

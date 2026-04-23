@@ -14,7 +14,7 @@
       "disk": {
         "measurement": ["used_percent", "inodes_free"],
         "metrics_collection_interval": {{ cwa_metrics_interval }},
-        "resources": ["/", "/mnt/pgdata"]
+        "resources": {{ cwa_disk_resources | to_json }}
       },
       "mem": {
         "measurement": ["mem_used_percent"],

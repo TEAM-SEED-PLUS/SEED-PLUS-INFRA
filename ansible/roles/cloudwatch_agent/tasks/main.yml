@@ -26,6 +26,21 @@
     path: /etc/systemd/system/amazon-cloudwatch-agent.service
   register: cwa_unit
 
+- name: Add cwagent to adm group for syslog and nginx log read access
+  ansible.builtin.user:
+    name: cwagent
+    groups: adm
+    append: true
+  notify: Restart cloudwatch-agent
+
+- name: Add cwagent to extra groups for additional log read access
+  ansible.builtin.user:
+    name: cwagent
+    groups: "{{ item }}"
+    append: true
+  loop: "{{ cwa_extra_groups }}"
+  notify: Restart cloudwatch-agent
+
 - name: Deploy CloudWatch Agent configuration
   ansible.builtin.template:
     src: amazon-cloudwatch-agent.json.j2

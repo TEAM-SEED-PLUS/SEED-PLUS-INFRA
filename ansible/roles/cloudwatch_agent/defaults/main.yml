@@ -4,3 +4,10 @@ cwa_log_group_prefix: "/seed-plus/dev"
 
 # Extra log files injected per-role (list of {file_path, log_group_name, log_stream_name})
 cwa_extra_logs: []
+
+# Additional OS groups cwagent should join for log read access (appended, never replaced)
+cwa_extra_groups: []
+
+# Disk mount points to monitor; override per-host to add volumes (e.g. /mnt/pgdata for DB)
+cwa_disk_resources:
+  - "/"
