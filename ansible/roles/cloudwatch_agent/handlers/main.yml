@@ -1,5 +1,10 @@
 ---
 - name: Restart cloudwatch-agent
-  ansible.builtin.service:
-    name: amazon-cloudwatch-agent
-    state: restarted
+  ansible.builtin.command:
+    cmd: >-
+      /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl
+      -a fetch-config
+      -m ec2
+      -s
+      -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
+  changed_when: true

@@ -54,4 +54,4 @@ If a task depends on a sensitive value, use placeholders such as `<REDACTED>` or
 - Treat `prod` as read-only unless explicitly stated otherwise.
 - **NEVER execute destructive, mutating, or irreversible commands (`terraform apply`, `ansible-playbook` without `--check`) without explicit manual approval.**
 - If anything is ambiguous, ask instead of assuming.
-- At the end of every response, include a one-line summary of what you just done in Korean.
+- At the end of every response, make sure to include a one-line summary of what you just done in Korean.
