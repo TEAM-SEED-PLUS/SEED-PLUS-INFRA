@@ -25,17 +25,24 @@
     update_cache: true
     cache_valid_time: 3600
 
-- name: Stop unattended-upgrades to release dpkg lock
+- name: Stop unattended-upgrades service
   ansible.builtin.systemd:
     name: unattended-upgrades
     state: stopped
   failed_when: false
 
+- name: Kill any process holding dpkg locks
+  ansible.builtin.shell: |
+    fuser -k /var/lib/dpkg/lock-frontend || true
+    fuser -k /var/lib/dpkg/lock || true
+    fuser -k /var/cache/apt/archives/lock || true
+  changed_when: false
+
 - name: Wait for dpkg lock to be released
   ansible.builtin.wait_for:
     path: /var/lib/dpkg/lock-frontend
     state: absent
-    timeout: 60
+    timeout: 30
 
 - name: Upgrade all packages
   ansible.builtin.apt:
