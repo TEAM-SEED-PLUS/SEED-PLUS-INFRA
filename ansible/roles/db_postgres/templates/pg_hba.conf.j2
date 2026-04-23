@@ -4,5 +4,6 @@ local   all       postgres                      peer
 local   all       all                           peer
 host    all       all       127.0.0.1/32        scram-sha-256
 host    all       all       ::1/128             scram-sha-256
-# Allow connections from app tier subnet only
+# Allow connections from app tier/web tier subnet
 host    all       all       {{ app_subnet_cidr }} scram-sha-256
+host    all       all       {{ web_subnet_cidr }} scram-sha-256
