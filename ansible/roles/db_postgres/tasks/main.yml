@@ -220,6 +220,7 @@
   community.postgresql.postgresql_user:
     name: "{{ pg_db_user }}"
     password: "{{ pg_password }}"
+    port: "{{ db_port }}"
     state: present
   become: true
   become_user: postgres
@@ -229,6 +230,7 @@
   community.postgresql.postgresql_db:
     name: "{{ pg_db_name }}"
     owner: "{{ pg_db_user }}"
+    port: "{{ db_port }}"
     state: present
   become: true
   become_user: postgres
