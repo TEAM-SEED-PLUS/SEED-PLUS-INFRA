@@ -169,6 +169,16 @@
   changed_when: true
 
 # --- Configuration ---
+# Changed: 메인 설정 파일에서 conf.d 디렉터리를 읽어오도록 주석 해제 및 설정 추가
+- name: Ensure conf.d is included in postgresql.conf
+  ansible.builtin.lineinfile:
+    path: "/etc/postgresql/{{ pg_version }}/{{ pg_cluster_name }}/postgresql.conf"
+    regexp: "^#?include_dir\\s*=\\s*'conf\\.d'"
+    line: "include_dir = 'conf.d'"
+    state: present
+  notify: Restart postgresql
+  when: pg_binary_stat.stat.exists
+
 # Changed: 커스텀 설정 파일이 들어갈 conf.d 디렉터리를 수동으로 먼저 생성
 - name: Ensure conf.d directory exists
   ansible.builtin.file:
@@ -235,6 +245,7 @@
   when: pg_binary_stat.stat.exists and pg_data_device_stat.stat.exists
 
 # --- Logical backup cron ---
+# Changed: 폴더 생성 태스크를 크론 등록보다 위로 올림
 - name: Ensure backup directory exists
   ansible.builtin.file:
     path: "{{ pg_data_dir }}/backup"
