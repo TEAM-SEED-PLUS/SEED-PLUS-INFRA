@@ -7,7 +7,8 @@ ansible_ssh_common_args: >-
   -o StrictHostKeyChecking=no -W %h:%p ubuntu@{{ nat_eip }}"
 
 pg_version: "17"
-pg_data_dir: /mnt/pgdata
+pg_mount_dir: /mnt/pgdata
+pg_data_dir: /mnt/pgdata/data
 pg_data_device: /dev/nvme1n1
 pg_cluster_name: main
 
