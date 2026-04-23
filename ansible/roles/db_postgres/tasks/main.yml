@@ -70,12 +70,22 @@
 
 - name: Mount EBS partition to data directory (persistent via fstab)
   ansible.posix.mount:
-    path: "{{ pg_data_dir }}"
+    path: "{{ pg_mount_dir }}"
     src: "{{ pg_data_partition }}"
     fstype: ext4
     opts: defaults,noatime
     state: mounted
   when: pg_data_device_stat.stat.exists and pg_partition_stat.stat.exists
+
+# Changed: 마운트 포인트(/mnt/pgdata) 아래에 실제 DB 데이터가 들어갈 하위 디렉터리(/mnt/pgdata/data) 생성
+- name: Create PostgreSQL data subdirectory
+  ansible.builtin.file:
+    path: "{{ pg_data_dir }}"
+    state: directory
+    mode: "0700"
+    owner: postgres
+    group: postgres
+  when: pg_data_device_stat.stat.exists
 
 # --- PostgreSQL installation ---
 - name: Install python3-psycopg2 (required by community.postgresql modules)
