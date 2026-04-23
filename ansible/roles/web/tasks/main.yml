@@ -42,8 +42,12 @@
     src: nginx_site.conf.j2
     dest: /etc/nginx/sites-available/{{ nginx_site_name }}.conf
     mode: "0644"
-    # Changed: %s 를 추가하여 새로 생성될 임시 파일을 검사하도록 수정
-    validate: nginx -t -c %s
+    # Changed: 임시 http {} 껍데기를 씌워서 문법 검사 (인라인 쉘 스크립트 활용)
+    validate: >
+      sh -c '
+      echo "events {} http { include %s; }" > /tmp/nginx_test.conf && 
+      nginx -t -c /tmp/nginx_test.conf
+      '
   notify: Reload nginx
   when: nginx_binary_stat.stat.exists
 
