@@ -14,7 +14,8 @@
       "disk": {
         "measurement": ["used_percent", "inodes_free"],
         "metrics_collection_interval": {{ cwa_metrics_interval }},
-        "resources": {{ cwa_disk_resources | to_json }}
+        "resources": {{ cwa_disk_resources | to_json }},
+        "drop_device": true
       },
       "mem": {
         "measurement": ["mem_used_percent"],
