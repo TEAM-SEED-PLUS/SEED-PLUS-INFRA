@@ -151,6 +151,17 @@
     state: present
   loop: "{{ private_cidrs }}"
 
+# Changed: SSM Port Forwarding을 위해 DB 포트(15921) 아웃바운드 허용 추가
+- name: Allow PostgreSQL outbound to private subnets (SSM Port Forwarding)
+  ansible.builtin.iptables:
+    chain: OUTPUT
+    protocol: tcp
+    destination_port: "15921"
+    destination: "{{ item }}"
+    jump: ACCEPT
+    state: present
+  loop: "{{ private_cidrs }}"
+
 # --- FORWARD chain ---
 - name: Allow ESTABLISHED/RELATED forward
   ansible.builtin.iptables:
